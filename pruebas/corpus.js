@@ -487,4 +487,45 @@ TERCERO.- Comunicar el presente Decreto a las Oficinas de Intervención y Tesore
 En Santa Fe a fecha de firma electrónica EL ALCALDE Fdo. Manuel Alberto Gil Corral`
 },
 
+{
+  id: 'seguros-sociales-julio-2026',
+  // Formato D con una variante real no vista hasta ahora: "Fase Aplicación
+  // Importe" (un código presupuestario sin decimales antes del importe real),
+  // en vez de "Fase Importe Saldo". Tomar a ciegas el primer número tras la
+  // fase leía el código de aplicación "16000" como si fueran 16.000 € en cada
+  // línea, e infló el total de un decreto real de 168.613,29 € (el que
+  // declara el propio PDF) a más de 2.166.595 €, además de contar a la
+  // Seguridad Social como "proveedor recurrente" por esa cifra falsa.
+  esperado: { tipo: 'pagos', expediente: '4496/2026', mandato: 'pp-2023' },
+  texto: `Expediente nº : 4496/ 2026 Asunto: Propuesta de pago Procedimiento: Seguros sociales JULIO 2026
+
+D. Juan Cobo Ortiz, Alcalde Presidente del Excmo. Ayuntamiento de Santa Fe (GRANADA). En uso de las facultades que me confiere el artículo 21.1.f de la Ley 7/85 de 2 de abril, Reguladora de las Bases de Régimen Local, y el artículo 186.1 del RD 2/2004 por el que se aprueba el Texto Refundido de la Ley Reguladora de las Haciendas Locales, prevista igualmente en las Bases de Ejecución del Presupuesto Municipal vigente,
+
+RESUELVO
+
+Ordenar el pago de los seguros sociales de JULIO/2026, con el detalle de aplicaciones presupuestarias, importes brutos siguientes y por los importes líquidos que se reflejan:
+
+Nº Operación Fase Aplicación Importe Nombre Ter. Texto Libre
+2026 9208 TESORERIA GENERAL JUNIO/2026, SEGUROS SOCIALES LABORALES.
+220260010031 ADO 16000 8.038,88 SEGURIDAD SOCIAL GRANADA EXPTE. 3779/2026
+JULIO 2026 SEGUROS SOCIALES, MIEMBROS
+2026 912 TESORERIA GENERAL DE LA CORPORACION Y PERSONAL DE
+220260011104 ADO 16000 4.425,95 SEGURIDAD SOCIAL GRANADA CONFIANZA. EXPTE. 4496/2026
+2026 132 TESORERIA GENERAL JULIO/2026, SEGUROS SOCIALES
+220260011105 ADO 16000 27.450,57 SEGURIDAD SOCIAL GRANADA FUNCIONARIOS. EXPTE. 4496/2026
+2026 151 TESORERIA GENERAL JULIO/2026, SEGUROS SOCIALES PERSONAL
+220260011106 ADO 16000 808,52 SEGURIDAD SOCIAL GRANADA LABORAL. EXPTE. 4496/2026
+2026 1531 TESORERIA GENERAL JULIO 2026 SEGUROS SOCIALES PROGRAMAS
+220260011108 ADO 61962 7.376,52 SEGURIDAD SOCIAL GRANADA EXPEDIENTE 4496/2026
+CUOTA SEGURIDAD SOCIALTRABAJADOR
+TESORERIA GENERAL MENOS PAGOSDELEGADOS POR IT. EXPTE.
+320260001262 PMP 20030 4.925,74 SEGURIDAD SOCIAL GRANADA 4496/2026
+
+168.613,29
+
+En Santa Fe a fecha de firma electrónica
+El Alcalde Presidente
+Fdo. Juan Cobo Ortiz`
+},
+
 ];

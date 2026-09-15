@@ -1,3 +1,8 @@
 node_modules/
 *.log
 .DS_Store
+
+# Decretos reales para validar el motor: llevan datos de vecinos y NUNCA
+# deben acabar en el historial de git, publicado o no.
+/Decretos/
+/decretos/

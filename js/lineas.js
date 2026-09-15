@@ -67,9 +67,20 @@ const CONCEPTO_DEVOLUCION =
  * imperativo legal, no relaciones contractuales con un proveedor: incluirlas
  * en "proveedor recurrente" sería tan absurdo como fiscalizar que Hacienda
  * cobra todos los meses.
+ *
+ * En los decretos de "ordenación de pagos" (formato D) el tercero que
+ * figura en la tabla no es "Tesorería General de la Seguridad Social" sino,
+ * literalmente, "SEGURIDAD SOCIAL GRANADA" — la frase "TESORERIA GENERAL"
+ * que sí aparece en el decreto es la de la propia Tesorería del Ayuntamiento
+ * pagando, en la línea de aplicación presupuestaria, no el nombre del
+ * beneficiario. Sin reconocer "SEGURIDAD SOCIAL" a secas como tercero, un
+ * decreto real llegó a contar a la Seguridad Social como "proveedor
+ * recurrente" por más de 1,5 millones de euros repartidos en decenas de
+ * líneas — precisamente el tipo de hallazgo falso y bochornoso que este
+ * filtro existe para evitar.
  */
 const CONCEPTO_TRIBUTO =
-  /\b(modelo\s*1\d{2}\b|\bIRPF\b|tesorer[íi]a general (?:de la )?seguridad social|agencia (?:estatal )?tributaria|retenci[óo]n (?:de )?(?:IRPF|impuestos))\b/i;
+  /\b(modelo\s*1\d{2}\b|\bIRPF\b|\bTGSS\b|tesorer[íi]a general (?:de la )?seguridad social|seguridad social|agencia (?:estatal )?tributaria|retenci[óo]n (?:de )?(?:IRPF|impuestos))\b/i;
 
 export function clasificarLinea(concepto = '') {
   if (CONCEPTO_AYUDA.test(concepto)) return 'ayuda';
@@ -276,25 +287,39 @@ function formatoC(texto) {
 }
 
 /**
- * Formato D — "Nº Operación Fase Importe Saldo", el que usan los decretos de
- * ORDENACIÓN DE PAGOS (distinto de los de APROBACIÓN DE GASTOS, que llevan
- * columnas de aplicación presupuestaria y son el formato A). Sin aplicación
- * presupuestaria ni fecha en la fila: el número de operación (9 a 14 dígitos)
- * es la única ancla fiable.
+ * Formato D — el que usan los decretos de ORDENACIÓN DE PAGOS (distinto de
+ * los de APROBACIÓN DE GASTOS, que llevan columnas de aplicación
+ * presupuestaria explícitas con puntos —"3231.221.05"— y son el formato A).
+ * Sin fecha en la fila: el número de operación (9 a 14 dígitos) es la única
+ * ancla fiable. Tras "Fase" vienen dos números, pero su significado varía
+ * según el decreto — se ha visto en decretos reales tanto "Importe Saldo"
+ * (donde el saldo repite el importe) como "Aplicación Importe" (un código
+ * presupuestario de aplicación, sin decimales, seguido del importe real).
  *
- * El nombre del tercero puede ir en la misma línea, en la siguiente, o no
- * existir en absoluto — los "pagos a justificar" se libran a favor de una
- * partida, no de un tercero, y eso es correcto: no deben aparecer como
- * proveedor.
+ * Confundir los dos es grave, no cosmético: en un decreto real de pago de
+ * seguros sociales, tomar el primer número a ciegas leyó el código de
+ * aplicación "16000" como si fueran 16.000 € en cada una de sus más de
+ * cuarenta líneas, inflando el total del decreto de 168.613,29 € (el que
+ * declara el propio PDF) a más de 2.166.595 € — y con ello disparó una
+ * alerta falsa de "proveedor recurrente" contra la Seguridad Social. Un
+ * código de aplicación es siempre un entero sin coma decimal; un importe en
+ * euros prácticamente siempre lleva sus dos decimales. Esa es la única
+ * señal fiable para distinguirlos: si un solo número de los dos lleva
+ * decimales, es el importe. Si los dos los llevan (el caso "Importe Saldo",
+ * donde ambos coinciden) o ninguno los lleva, se conserva el criterio
+ * original de tomar el primero.
  */
 const RE_OPERACION = new RegExp(String.raw`\b(\d{9,14})\s+(ADO|ADOP|PMP|RC|AD|A|D|O|P)\s+(${NUM})\s+(${NUM})\s*(.*)$`);
+
+const LLEVA_DECIMALES = (s) => /,\d{2}$/.test(s);
 
 function formatoD(lineas) {
   const out = [];
   for (let i = 0; i < lineas.length; i++) {
     const m = lineas[i].match(RE_OPERACION);
     if (!m) continue;
-    const [, operacion, fase, imp, , resto] = m;
+    const [, operacion, fase, num1, num2, resto] = m;
+    const imp = LLEVA_DECIMALES(num2) && !LLEVA_DECIMALES(num1) ? num2 : num1;
 
     let nombre = limpiarTercero(resto);
     let concepto = '';

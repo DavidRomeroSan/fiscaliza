@@ -27,7 +27,16 @@ Empujar el repositorio a GitHub y activar Pages sobre la rama principal. El proc
 node pruebas/probar.js
 ```
 
-Verifica extracción, anonimización, atribución de mandato (incluidos subperíodos de alcaldía) y alertas contra 11 decretos reales del Ayuntamiento, en 5 formatos de propuesta de gasto. 74 comprobaciones en verde.
+Verifica extracción, anonimización, atribución de mandato (incluidos subperíodos de alcaldía) y alertas contra decretos reales del Ayuntamiento, en varios formatos de propuesta de gasto.
+
+**Validar contra una carpeta de decretos reales, fuera del navegador**
+
+```bash
+npm install
+node pruebas/validar-real.js ruta/a/la/carpeta   # por defecto: ./Decretos
+```
+
+Ejecuta el mismo motor (mismo pdf.js, misma reconstrucción de líneas que ve un concejal en su navegador) contra todos los PDF de una carpeta, y saca un resumen: tipos, mandatos, confianza de atribución, importes, avisos a revisar a mano y patrones de la serie. Pensado para calibrar a escala antes de confiar en la herramienta para algo público — la carpeta que le pases nunca debe subirse a git (añade la tuya a `.gitignore` si no se llama `Decretos`).
 
 ---
 

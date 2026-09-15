@@ -3,6 +3,7 @@ import { anonimizar } from '../js/redact.js';
 import { extraerLineas, terceros } from '../js/lineas.js';
 import { analizar, fmtEuro } from '../js/parse.js';
 import { evaluarDecreto, evaluarPatrones, lecturaOposicion } from '../js/rules.js';
+import { limpiar } from '../js/extract.js';
 
 let fallos = 0;
 const comprobar = (cond, msg) => {
@@ -149,6 +150,35 @@ const anonRenta = anonimizar(CORPUS.find(c => c.id === 'renta-vitalicia').texto,
 comprobar(!/FRANCISCA ÁLVAREZ SÁNCHEZ|FRANCISCA ALVAREZ SANCHEZ/i.test(anonRenta.textoAnonimo), 'el nombre de la beneficiaria fallecida queda anonimizado');
 comprobar(!/24093093H/.test(anonRenta.textoAnonimo), 'su NIF queda anonimizado');
 comprobar(anonRenta.contextos.some(c => /pensión/i.test(c)), 'se marca el contexto sensible de pensión/defunción');
+
+console.log('\n━━━ formato D con columna de Aplicación: no confundir el código con el importe ━━━');
+const seguros = fichas.find(f => f.archivo.startsWith('seguros-sociales-julio-2026'));
+const importesReales = [8038.88, 4425.95, 27450.57, 808.52, 7376.52, 4925.74];
+const importesExtraidos = seguros.lineas.map(l => l.importe).sort((a, b) => a - b);
+comprobar(
+  importesExtraidos.length === importesReales.length &&
+  importesReales.slice().sort((a, b) => a - b).every((v, i) => Math.abs(v - importesExtraidos[i]) < 0.01),
+  `importes reales extraídos, no el código de aplicación → [${importesExtraidos.join(', ')}]`
+);
+comprobar(seguros.lineas.every(l => l.tipo === 'tributo'), 'las 6 líneas se clasifican como tributo, no como proveedor');
+comprobar(seguros.nFacturas === 0 && seguros.porTercero.length === 0,
+  'la Seguridad Social no cuenta como proveedor recurrente (nFacturas=0, porTercero vacío)');
+comprobar(seguros.sumaLineas === 0, 'sumaLineas (solo cuenta proveedor) se queda en 0, no en 53.026,18 €');
+
+console.log('\n━━━ limpiar(): el pie de "esPublico Gestiona" no contamina la firma ━━━');
+// Encontrado validando contra un decreto real de pago de seguros sociales
+// (2026-1534): la firma "Fdo. Juan Cobo Ortiz" quedaba justo encima del pie
+// de página en la siguiente línea. El pie se limpiaba solo a medias —
+// "esPublico" se borraba, "Gestiona" no— y esa palabra suelta se colaba en
+// el nombre del firmante, porque el patrón de firmante admite saltos de
+// línea dentro del nombre. Resultado real observado: firmante "Juan Cobo
+// Ortiz Gestiona" en vez de "Juan Cobo Ortiz".
+const textoConPieReal =
+  'Fdo. Juan Cobo Ortiz\nCód. Validación: 5XQPWYSPHDNAP3DRENCFTMYDK Verificación: https://santafe.sedelectronica.es/ ' +
+  'Documento firmado electrónicamente desde la plataforma esPublico Gestiona | Página 2 de 2';
+const limpio = limpiar(textoConPieReal);
+comprobar(!/Gestiona/.test(limpio), `"Gestiona" no sobrevive a limpiar() → "${limpio.replace(/\s+/g, ' ').trim()}"`);
+comprobar(/Fdo\. Juan Cobo Ortiz/.test(limpio), 'la firma en sí se conserva intacta');
 
 console.log('\n━━━ fmtEuro: separador de miles en importes de 4 cifras ━━━');
 // toLocaleString('es-ES', {style:'currency'}) deja estos importes sin el
