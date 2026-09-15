@@ -39,7 +39,7 @@ const CARGOS_TOKENS = CARGOS_PUBLICOS.map(c => new Set(norm(c).split(/\s+/)));
  * por conjunto de apellidos y nombre: si todo lo que hay está dentro de un
  * cargo conocido, es ese cargo.
  */
-function esCargoPublico(candidato) {
+export function esCargoPublico(candidato) {
   const tokens = norm(sinTratamiento(candidato)).split(/\s+/).filter(w => w.length > 2);
   if (tokens.length < 2) return false;
   return CARGOS_TOKENS.some(set => tokens.every(t => set.has(t)));

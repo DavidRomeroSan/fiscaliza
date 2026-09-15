@@ -9,6 +9,7 @@
 
 import { MANDATOS } from './config.js';
 import { extraerLineas, agruparPorTercero, mayoresCuantias, sumaLineas } from './lineas.js';
+import { esCargoPublico } from './redact.js';
 
 /* ────────────────────────── utilidades ────────────────────────── */
 
@@ -141,6 +142,21 @@ export function extraerFirmante(texto) {
 }
 
 /**
+ * ¿Firma un concejal delegado, no la Alcaldía?
+ *
+ * Validado contra decretos reales de 2026: varios concejales (Hacienda,
+ * Urbanismo, Mantenimiento...) firman a diario en virtud de la misma
+ * Resolución de Alcaldía nº 2023-1200, de 22 de junio de 2023, que delega
+ * la gestión de sus áreas — "EL CONCEJAL DELEGADO" / "LA CONCEJAL DELEGADA".
+ * Sin reconocer esto, la atribución de mandato marcaba "confianza: revisar"
+ * en la inmensa mayoría de los decretos de la serie, como si una delegación
+ * legítima y citada en el propio decreto fuera una anomalía a comprobar.
+ */
+export function esConcejalDelegado(texto) {
+  return /CONCEJAL[A]?\s+DELEGAD[OA]/i.test(texto);
+}
+
+/**
  * Cruza fecha y firmante contra la tabla de mandatos.
  *
  * Cada mandato puede cubrir varias alcaldías (ver MANDATOS en config.js): esto
@@ -148,8 +164,13 @@ export function extraerFirmante(texto) {
  * decretos de un alcalde a su sucesora solo porque comparten mandato y partido.
  * La atribución se resuelve primero a nivel de alcaldía —quién firmaba ese
  * día— y el mandato se deriva de ahí, nunca al revés.
+ *
+ * `firmaPorDelegacion` evita que una delegación legítima (concejal delegado
+ * firmando en su área, cargo público ya verificado en CARGOS_PUBLICOS) se
+ * marque como "revisar": solo se exige comprobación manual cuando el firmante
+ * no está reconocido, que es el caso realmente dudoso.
  */
-export function atribuirMandato(fechaIso, firmante) {
+export function atribuirMandato(fechaIso, firmante, firmaPorDelegacion = false) {
   const norm = (s) =>
     (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
 
@@ -175,14 +196,18 @@ export function atribuirMandato(fechaIso, firmante) {
     if (r) {
       const { mandato, alcaldia } = r;
       const coincide = !firmante || !alcaldia || norm(alcaldia.nombre) === norm(firmante);
+      const delegacionReconocida = !coincide && firmaPorDelegacion && firmante && esCargoPublico(firmante);
       let confianza = 'alta', nota = null;
       if (!alcaldia) {
         confianza = 'revisar';
         nota = `La fecha cae en el ${mandato.etiqueta} pero no coincide con ningún subperíodo de alcaldía registrado. Comprueba el dato: puede faltar actualizar config.js.`;
-      } else if (!coincide) {
+      } else if (!coincide && !delegacionReconocida) {
         confianza = 'revisar';
         nota = `La fecha corresponde a la alcaldía de ${alcaldia.nombre} (${mandato.etiqueta}) pero firma ${firmante}. Puede ser una delegación, una sustitución o un error de fecha.`;
       }
+      // Si hay delegación reconocida, se mantiene confianza "alta" y sin nota:
+      // el propio decreto ya declara la delegación y el firmante es un cargo
+      // público ya verificado, no hace falta volver a comprobarlo cada vez.
       return {
         id: mandato.id, etiqueta: mandato.etiqueta, partido: mandato.partido,
         alcaldia: alcaldia ? alcaldia.nombre : (firmante || null),
@@ -581,7 +606,7 @@ export function analizar(texto, nombreArchivo = '') {
   const clasificacion = clasificar(texto, lineas.filter(l => l.tipo === 'proveedor').length);
   const fecha = extraerFecha(texto);
   const firmante = extraerFirmante(texto);
-  let mandato = atribuirMandato(fecha.iso, firmante);
+  let mandato = atribuirMandato(fecha.iso, firmante, esConcejalDelegado(texto));
 
   // En un informe anual de reparos, la fecha que se detecta en el cuerpo del
   // texto es casi siempre el inicio del periodo que resume ("entre el 1 de
