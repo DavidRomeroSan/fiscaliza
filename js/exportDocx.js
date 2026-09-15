@@ -19,7 +19,13 @@ let docxLib = null;
 
 async function cargarDocx() {
   if (docxLib) return docxLib;
-  docxLib = await import(/* @vite-ignore */ DOCX_SRC);
+  // En Node (pruebas/validar-real.js, sin `window`) se usa el paquete local
+  // — mismo pin de versión que el CDN — para poder validar la salida en Word
+  // a escala sin depender de un navegador. En el navegador real esta rama
+  // nunca se toma: siempre se carga desde CDN, como el resto del proyecto.
+  docxLib = typeof window === 'undefined'
+    ? await import('docx')
+    : await import(/* @vite-ignore */ DOCX_SRC);
   return docxLib;
 }
 
@@ -76,9 +82,25 @@ function aviso(docx, texto) {
 
 /* ─────────── ficha técnica (neutra, por decreto) ─────────── */
 
-export async function fichaDocxBlob(ficha) {
-  const docx = await cargarDocx();
+/**
+ * Construye los párrafos/tablas de una ficha, sin envolverlos en un
+ * documento — así se puede usar tanto para la descarga de una ficha suelta
+ * (fichaDocxBlob) como para pegar 135 fichas seguidas en un único Word
+ * (resumenFichasDocxBlob) sin duplicar la lógica de construcción.
+ *
+ * `opciones.mostrarMandato` (por defecto true): se puede omitir cuando el
+ * lote entero es del mismo mandato y el dato no aporta nada — pedido
+ * explícitamente para el resumen de un lote de validación de 2026.
+ */
+function fichaDocxChildren(docx, ficha, opciones = {}) {
+  const { mostrarMandato = true } = opciones;
   const hijos = [];
+
+  if (ficha.tipo === 'indice') {
+    hijos.push(h1(docx, 'Índice del libro de decretos'));
+    hijos.push(italica(docx, 'No es un decreto individual: es el listado de la remesa recibida.'));
+    return hijos;
+  }
 
   hijos.push(h1(docx, `Decreto ${ficha.decreto || 's/n'}`));
   hijos.push(italica(docx, 'Ficha técnica. Contenido extraído del propio decreto, sin interpretación.'));
@@ -86,10 +108,13 @@ export async function fichaDocxBlob(ficha) {
   hijos.push(campo(docx, 'Expediente', ficha.expediente || 'No consta'));
   hijos.push(campo(docx, 'Tipo', ficha.tipoNombre));
   hijos.push(campo(docx, 'Objeto', ficha.objeto || 'No consta'));
+  if (ficha.beneficiario) hijos.push(campo(docx, 'Beneficiario', ficha.beneficiario));
   hijos.push(campo(docx, 'Fecha', ficha.fecha ? `${ficha.fecha}${ficha.fechaOrigen ? ` (${ficha.fechaOrigen})` : ''}` : 'No consta'));
   hijos.push(campo(docx, 'Firmante', ficha.firmante || 'No consta'));
-  hijos.push(campo(docx, 'Mandato',
-    `${ficha.mandato?.etiqueta || 'Sin determinar'}${ficha.mandato?.confianza && ficha.mandato.confianza !== 'alta' ? ` (atribución: ${ficha.mandato.confianza})` : ''}`));
+  if (mostrarMandato) {
+    hijos.push(campo(docx, 'Mandato',
+      `${ficha.mandato?.etiqueta || 'Sin determinar'}${ficha.mandato?.confianza && ficha.mandato.confianza !== 'alta' ? ` (atribución: ${ficha.mandato.confianza})` : ''}`));
+  }
   hijos.push(campo(docx, 'Importe', fmtEuro(ficha.importeTotal)));
 
   if (ficha.aplicaciones?.length) {
@@ -168,8 +193,70 @@ export async function fichaDocxBlob(ficha) {
     for (const d of faltan) hijos.push(vineta(docx, d));
   }
 
-  hijos.push(italica(docx, `Generado el ${new Date().toLocaleDateString('es-ES')}. Documento de trabajo interno.` +
-    ' Los datos personales de particulares han sido sustituidos por marcadores. Revísalo antes de compartir.'));
+  return hijos;
+}
+
+/**
+ * Aviso de cierre: cambia según si el texto de origen se anonimizó o no.
+ * Usa la misma clave `anonimo` (no `sinAnonimizar`) que fichaMarkdown() y
+ * fichaDocxChildren() — una discrepancia de nombre aquí haría que este aviso
+ * dijera SIEMPRE "sustituidos por marcadores", incluso en un documento con
+ * los nombres y DNI reales, que es precisamente el caso que más importa
+ * advertir bien.
+ */
+function avisoCierre(docx, { anonimo = true } = {}) {
+  return italica(docx, `Generado el ${new Date().toLocaleDateString('es-ES')}. Documento de trabajo interno. ` +
+    (anonimo
+      ? 'Los datos personales de particulares han sido sustituidos por marcadores. Revísalo antes de compartir.'
+      : 'Contiene datos personales SIN anonimizar (nombres, DNI de particulares). No lo compartas fuera del grupo municipal.'));
+}
+
+export async function fichaDocxBlob(ficha, opciones = {}) {
+  const docx = await cargarDocx();
+  const hijos = fichaDocxChildren(docx, ficha, opciones);
+  hijos.push(avisoCierre(docx, opciones));
+  const doc = new docx.Document({ sections: [{ children: hijos }] });
+  return docx.Packer.toBlob(doc);
+}
+
+/* ─────────── resumen de fichas (todo el lote, un único Word) ─────────── */
+
+/**
+ * Un único documento Word con la ficha técnica de cada archivo del lote, en
+ * el mismo orden en que se subieron — pensado para validar un lote entero
+ * (p. ej. 135 decretos) de una sentada, igual que resumenFichasMarkdown()
+ * pero en formato Word. `elementos` es un array de { archivo, ficha } o
+ * { archivo, error }, uno por CADA archivo subido (éxito o fallo): la
+ * cobertura se cuenta por archivo, no por número de decreto, que no siempre
+ * es correlativo.
+ */
+export async function resumenFichasDocxBlob(elementos, opciones = {}) {
+  // Un lote de validación suele ser de un único mandato: repetirlo 135 veces
+  // no aporta nada, así que aquí se omite por defecto (a diferencia de
+  // fichaDocxBlob, donde si tiene sentido para una ficha suelta).
+  const opts = { mostrarMandato: false, ...opciones };
+  const docx = await cargarDocx();
+  const hijos = [];
+
+  hijos.push(h1(docx, 'Resumen de decretos — hechos objetivos'));
+  hijos.push(italica(docx, 'Ficha técnica de cada archivo recibido, sin interpretación. El análisis es posterior y humano.'));
+
+  const noLeidos = elementos.filter(e => !e.ficha);
+  hijos.push(parrafo(docx,
+    `Archivos recibidos: ${elementos.length} · Analizados: ${elementos.length - noLeidos.length} · No se pudieron leer: ${noLeidos.length}`));
+
+  if (noLeidos.length) {
+    hijos.push(h2(docx, 'Archivos que no se han podido leer'));
+    for (const e of noLeidos) hijos.push(vineta(docx, `${e.archivo} — ${e.error}`));
+  }
+
+  for (const e of elementos) {
+    if (!e.ficha) continue;
+    hijos.push(parrafo(docx, `Archivo: ${e.archivo}`, { pageBreakBefore: hijos.length > 1 }));
+    hijos.push(...fichaDocxChildren(docx, e.ficha, opts));
+  }
+
+  hijos.push(avisoCierre(docx, opts));
 
   const doc = new docx.Document({ sections: [{ children: hijos }] });
   return docx.Packer.toBlob(doc);

@@ -159,6 +159,7 @@ const renta = fichas.find(f => f.archivo.startsWith('renta-vitalicia'));
 const alertasRenta = evaluarDecreto(renta);
 comprobar(alertasRenta.some(a => a.id === 'P06'), 'se dispara P06 (pensión sin competencia municipal)');
 comprobar(!renta.porTercero.length, 'la beneficiaria de la pensión NO se cuenta como proveedor');
+comprobar(!!renta.beneficiario, `beneficiario detectado (sobre texto ya anonimizado, así que es un marcador, no el nombre) → "${renta.beneficiario}"`);
 const provRenta = terceros(extraerLineas(CORPUS.find(c => c.id === 'renta-vitalicia').texto));
 const anonRenta = anonimizar(CORPUS.find(c => c.id === 'renta-vitalicia').texto, { permitir: provRenta });
 comprobar(!/FRANCISCA ÁLVAREZ SÁNCHEZ|FRANCISCA ALVAREZ SANCHEZ/i.test(anonRenta.textoAnonimo), 'el nombre de la beneficiaria fallecida queda anonimizado');
@@ -224,6 +225,39 @@ const comoSiVinieraDelRegistro = JSON.parse(JSON.stringify(opsDesfavorable));
 const alertasDesdeRegistro = evaluarDecreto(comoSiVinieraDelRegistro);
 comprobar(alertasDesdeRegistro.some(a => a.id === 'B03'),
   'B03 se dispara recalculando desde una ficha ya guardada, sin el texto original');
+
+console.log('\n━━━ número de decreto y fecha: no confundir con la delegación de Alcaldía citada en el cuerpo ━━━');
+const caseta = fichas.find(f => f.archivo.startsWith('licencia-caseta-joven-2026-1651'));
+comprobar(caseta.decreto === '2026-1651', `número de decreto del pie, no el de la delegación → "${caseta.decreto}"`);
+comprobar(caseta.fecha === '2026-08-28', `fecha del pie, no la de la delegación (2023-06-22) → "${caseta.fecha}"`);
+comprobar(!/^del Expediente/i.test(caseta.objeto || ''), `objeto sin el "del Expediente:" colado por delante → "${caseta.objeto}"`);
+comprobar(caseta.tipo !== 'multa', `la cláusula de estilo sobre sanciones futuras no clasifica la licencia como multa → tipo "${caseta.tipo}"`);
+
+console.log('\n━━━ ayuda social básica: objeto sin basura, firmante con punto antes de Fdo., beneficiario ━━━');
+const ayuda = fichas.find(f => f.archivo.startsWith('ayuda-social-basica-2026-1528'));
+comprobar(!/^emitido por/i.test(ayuda.objeto || ''), `objeto sin el fragmento roto de "PROPUESTA" suelta → "${ayuda.objeto}"`);
+comprobar(/Aprobar una Ayuda/i.test(ayuda.objeto || ''), `objeto capta la acción resolutiva real → "${ayuda.objeto}"`);
+// Este decreto firma en minúsculas normales ("Fdo. Juan Cobo Ortiz."), a
+// diferencia de otros decretos del corpus que citan el nombre en mayúsculas
+// desde el propio encabezado: extraerFirmante() conserva la grafía de
+// origen tal cual, no la normaliza.
+comprobar(ayuda.firmante === 'Juan Cobo Ortiz', `firmante pese al guion+espacio en "EL ALCALDE- PRESIDENTE." → "${ayuda.firmante}"`);
+// `ayuda` viene del bucle principal, que anonimiza antes de analizar (como
+// hace la app por defecto): el beneficiario real ya está sustituido por un
+// marcador en ese punto. Aquí solo se comprueba que SE HA detectado que hay
+// beneficiario; el nombre real se comprueba aparte, sobre texto sin anonimizar.
+comprobar(/^\[PERSONA_\d+\]$/.test(ayuda.beneficiario || ''), `beneficiario detectado como marcador sobre texto ya anonimizado → "${ayuda.beneficiario}"`);
+const textoAyudaCrudo = CORPUS.find(c => c.id === 'ayuda-social-basica-2026-1528').texto;
+const fichaAyudaSinAnonimizar = analizar(textoAyudaCrudo, 'ayuda.pdf');
+comprobar(fichaAyudaSinAnonimizar.beneficiario === 'ELENA GRANADOS MATEOS',
+  `beneficiario real sobre texto SIN anonimizar (modo "uso interno") → "${fichaAyudaSinAnonimizar.beneficiario}"`);
+
+console.log('\n━━━ índice del libro de decretos: no es un decreto individual ━━━');
+const indice = fichas.find(f => f.archivo.startsWith('indice-libro-decretos'));
+comprobar(indice.tipo === 'indice', `clasificado como índice → "${indice.tipo}"`);
+comprobar(indice.decreto === null, `sin número de decreto inventado → "${indice.decreto}"`);
+comprobar(indice.fecha === null, `sin fecha inventada → "${indice.fecha}"`);
+comprobar(!/^\]/.test(indice.objeto || ''), `objeto no es un fragmento roto de un marcador de anonimización → "${indice.objeto}"`);
 
 console.log(`\n${fallos === 0 ? '✓ TODAS LAS COMPROBACIONES PASAN' : `✗ ${fallos} FALLO(S)`}\n`);
 process.exit(fallos ? 1 : 0);

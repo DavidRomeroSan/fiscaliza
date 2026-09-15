@@ -579,4 +579,108 @@ LA CONCEJAL DELEGADA
 FDO: Dª. Susana Leyva Pérez.`
 },
 
+{
+  id: 'licencia-caseta-joven-2026-1651',
+  // Extracto real del decreto 2026-1651 (licencia de caseta, Fiestas de San
+  // Agustín 2026), con el mismo desorden que produce pdf.js de verdad sobre
+  // este documento: el pie rotado de esPublico Gestiona ("DECRETO" /
+  // "Número: 2026-1651" / "Fecha: 28/08/2026") NO sale contiguo — itemsALineas()
+  // (extract.js) agrupa por altura, y al estar girado 90° sus fragmentos
+  // caen mezclados con líneas de cuerpo sin relación, en un orden distinto
+  // cada vez. "Fecha: 28/08/2026" queda aquí varias líneas ANTES que
+  // "Número: 2026-1651", que a su vez queda pegado a un fragmento de
+  // "SEGUNDO.- Vista la documentación...". Esto tumbó el primer intento de
+  // arreglo (que asumía "DECRETO Número: X Fecha: Y" como frase seguida).
+  // Además, el patrón genérico de número/fecha cogía "Resolución de Alcaldía
+  // n.º 2023-1200 de 22 de junio de 2023" (la delegación que da competencia
+  // al firmante, citada en el encabezamiento) en vez del número y fecha
+  // reales del decreto. Y la cláusula de estilo sobre sanciones futuras
+  // ("imponer las sanciones que correspondiesen") etiquetaba la licencia
+  // entera como "Sanción o multa".
+  esperado: { tipo: 'licencia_actividad', expediente: '5002/2026' },
+  texto: `RESOLUCIÓN
+Expediente nº: 5002/2026
+Resolución con número y fecha establecidos al margen
+Procedimiento: Licencia de Actividades y Espectáculos Públicos
+Asunto del Expediente: Puesta en funcionamiento de CASETA JOVEN durante Fiestas Santa Fe 2026 (KOMMAFEST S.L)
+
+DON RUBEN MARTINEZ BERMUDEZ, CONCEJAL DELEGADO DE HACIENDA Y GESTION ECONOMICA, JUVENTUD, NUEVAS TECNOLOGIAS, FIESTAS, COMUNICACION Y ACTIVIDADES DEL EXCMO. AYUNTAMIENTO DE SANTA FE (GRANADA), en virtud de Resolución de Alcaldía n.º 2023-1200 de 22 de junio de 2023 y Resolución de Alcaldía nº. 2025-2549 de 19 de noviembre de 2025, y en uso de las atribuciones que me confiere la vigente Legislación de Régimen Local, vengo a dictar la siguiente
+
+HECHOS Y FUNDAMENTOS DE DERECHO
+
+PRIMERO. Vista la solicitud presentada para la instalación casetas Joven de feria con motivo de la celebración de las Fiestas Patronales de San Agustín 2026, durante los días 27 a 30 de agosto de 2026, por: 5002/2026 Licencia de puesta en funcionamiento KOMMAFEST SL CASETA JOVEN
+
+Fecha: 28/08/2026
+
+SEGUNDO.- Vista la documentación presentada por el interesado y el informe emitido por el Número: 2026-1651
+DECRETO
+Ingeniero Técnico Municipal de fecha 27 de agosto de 2026, las actividades solicitadas están consideradas como una actividad recreativa ocasional y extraordinaria.
+
+RESOLUCIÓN
+
+PRIMERO: Conceder a KOMMAFEST SL, autorización para la INSTALACIÓN y PUESTA EN FUNCIONAMIENTO de una Caseta Joven.
+
+TERCERO: Háganse las notificaciones que procedan, encomendando a la Jefatura de la Policía Local la supervisión, vigilancia y control de la actividad, de forma que si comprobasen que no se están cumpliendo las condiciones u obligaciones indicadas, levantarán acta de denuncia a los efectos de imponer las sanciones que correspondiesen, dando traslado a esta Concejalía para adoptar la resolución que procediese.
+
+ºEn Santa Fe, a fecha de firma electrónica.
+EL CONCEJAL DELEGADO.
+Fdo.: D. Rubén Martínez Bermúdez.`
+},
+
+{
+  id: 'ayuda-social-basica-2026-1528',
+  // Extracto real del decreto 2026-1528 (Programa Municipal de Atención
+  // Social Básica). No lleva "Asunto:" ni "PROPUESTA:" propios — solo un
+  // título de portada — así que extraerObjeto() se quedaba con la basura que
+  // devolvía el patrón suelto de "PROPUESTA" ("emitido por el Equipo de SSC,
+  // la Propuesta de Gasto de la...", cogido de en medio de una frase). Y el
+  // punto en "EL ALCALDE- PRESIDENTE." (antes de "Fdo.") rompía el patrón de
+  // firmante. Además, es el caso de uso real de extraerBeneficiario(): el
+  // dato que de verdad importa en este tipo de decreto (a quién se le
+  // reconoce la ayuda) no lo recogía ningún campo de la ficha.
+  esperado: { tipo: 'general', expediente: '4848/2026' },
+  texto: `08 RESOLUCIÓN DE ALCALDÍA:
+Programa Municipal de Atención Social Básica 2026
+Nº EXPEDIENTE: 4848/2026
+
+D. JUAN COBO ORTIZ, Alcalde - Presidente del Ayuntamiento de Santa Fe, en uso de las atribuciones que la vigente Legislación de Régimen Local me confiere, he dictado el siguiente
+
+RESOLUCIÓN:
+
+Vistas las circunstancias que concurren en el expediente tramitado por los Servicios Sociales Comunitarios Municipales de D./Dª ELENA GRANADOS MATEOS con DNI Nº 74639163T, el Informe-Propuesta emitido por el Equipo de SSC, la Propuesta de Gasto de la Sr. Concejal-Delegado de Hacienda y Gestión Económica, y el Informe de Intervención, es por lo que, de conformidad con lo establecido en el art. 21.1 g) de la Ley 7/1985, de 2 de abril, Reguladora de las Bases de Régimen Local, HE RESUELTO:
+
+Fecha: 24/08/2026
+
+1. APROBAR una Ayuda de Atención Social Básica, a favor de
+D./Dª ELENA GRANADOS MATEOS con DNI Nº 74639163T
+dentro del ámbito del "Programa Municipal de Atención Social Básica, 2026", gestionado por este Ayuntamiento de Santa Fe, por importe de DOS MIL SEISCIENTOS EUROS (2.600€), con cargo a la Aplicación Presupuestaria Nº 2410.480.00.01 para el
+
+Número: 2026-1528
+DECRETO
+
+"Programa Municipal de Atención Social Básica 2026"
+
+2. Dar traslado de esta Resolución para su tramitación que proceda a Intervención y Tesorería, así como al mismo Área de SSC.
+
+En Santa Fe, a fecha de firma electrónica
+
+EL ALCALDE- PRESIDENTE.
+Fdo. Juan Cobo Ortiz.`
+},
+
+{
+  id: 'indice-libro-decretos',
+  // El índice del lote (se sube junto a los decretos) no es un decreto: sin
+  // reconocerlo aparte, el motor le atribuía número, fecha y objeto sacados
+  // del primer decreto que lista el propio índice.
+  esperado: { tipo: 'indice' },
+  texto: `Libro: Libro de Decretos
+Apertura: 1 de abril de 2015
+
+ÍNDICE DE DOCUMENTOS
+
+DECRETO 2026-1651 [Resolución PR/2026/1651 - Actuación genérica sin firma de propuesta] (4SDTH6YALT9M2JD7SJJNFW26Y)
+DECRETO 2026-1650 [Resolución PR/2026/1650 - Actuación genérica sin firma de propuesta] (5YKFGCS5CAWSM3DLCAPDW655E)`
+},
+
 ];

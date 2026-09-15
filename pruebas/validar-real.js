@@ -10,8 +10,13 @@
  * un concejal subiendo el mismo PDF en su navegador — no una extracción de
  * texto genérica que podría dar un resultado distinto.
  *
- * USO: node pruebas/validar-real.js [carpeta]
+ * USO: node pruebas/validar-real.js [carpeta] [--sin-anonimizar]
  * Por defecto usa ./Decretos (gitignored: nunca debe entrar en el repo).
+ *
+ * --sin-anonimizar salta el paso de redact.js: analiza el texto tal cual,
+ * con nombres y DNI de particulares visibles. Pensado solo para generar el
+ * documento de trabajo interno del grupo (resumen_fichas.docx) — nunca para
+ * el informe consolidado ni para nada que vaya a salir del grupo municipal.
  *
  * No escribe el texto íntegro de ningún decreto a disco: solo genera un
  * resumen estructurado (igual que registry.js) y avisos legibles.
@@ -22,7 +27,9 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const carpeta = process.argv[2] || join(__dirname, '..', 'Decretos');
+const args = process.argv.slice(2).filter(a => a !== '--sin-anonimizar');
+const carpeta = args[0] || join(__dirname, '..', 'Decretos');
+const sinAnonimizar = process.argv.includes('--sin-anonimizar');
 
 const pdfjs = await import('../node_modules/pdfjs-dist/legacy/build/pdf.mjs');
 pdfjs.GlobalWorkerOptions.workerSrc = join(__dirname, '..', 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs');
@@ -32,7 +39,8 @@ import { anonimizar } from '../js/redact.js';
 import { extraerLineas, terceros } from '../js/lineas.js';
 import { analizar, datosNoIncluidos, fmtEuro } from '../js/parse.js';
 import { evaluarDecreto, evaluarPatrones } from '../js/rules.js';
-import { informeConsolidadoMarkdown } from '../js/export.js';
+import { informeConsolidadoMarkdown, resumenFichasMarkdown } from '../js/export.js';
+import { resumenFichasDocxBlob } from '../js/exportDocx.js';
 
 /* ─────────── misma reconstrucción de líneas que extract.js ─────────── */
 
@@ -88,6 +96,10 @@ const fichas = [];
 const entradas = []; // { ficha, alertas } — lo que pide informeConsolidadoMarkdown
 const fallos = [];
 const avisos = []; // { archivo, tipo de aviso, detalle } — para revisar a mano
+// Un elemento por archivo subido, EN ORDEN, éxito o fallo — es la cobertura
+// que pide resumenFichasMarkdown: se cuenta por archivo, no por número de
+// decreto (que no siempre es correlativo y no sirve para saber si falta uno).
+const elementosPorArchivo = [];
 
 for (const nombre of archivos) {
   const ruta = join(carpeta, nombre);
@@ -96,16 +108,19 @@ for (const nombre of archivos) {
     const { texto, paginas, escaneado } = await textoDePdf(buffer);
 
     if (escaneado || texto.length < 200) {
-      fallos.push({ archivo: nombre, motivo: 'PDF sin texto legible (posible escaneo)' });
+      const motivo = 'PDF sin texto legible (posible escaneo)';
+      fallos.push({ archivo: nombre, motivo });
+      elementosPorArchivo.push({ archivo: nombre, error: motivo });
       continue;
     }
 
     const proveedores = terceros(extraerLineas(texto));
     const anon = anonimizar(texto, { permitir: proveedores });
-    const ficha = analizar(anon.textoAnonimo, nombre);
+    const ficha = analizar(sinAnonimizar ? texto : anon.textoAnonimo, nombre);
     const alertas = evaluarDecreto(ficha);
     fichas.push(ficha);
     entradas.push({ ficha, alertas });
+    elementosPorArchivo.push({ archivo: nombre, ficha });
 
     // Señales de alerta sobre la PROPIA extracción, no sobre el Ayuntamiento:
     // esto es lo que hay que revisar a mano contra el PDF original.
@@ -116,9 +131,15 @@ for (const nombre of archivos) {
     if (ficha.mandato.confianza === 'revisar') avisos.push({ archivo: nombre, aviso: `mandato: confianza A REVISAR — ${ficha.mandato.nota}` });
     if (ficha.cuadra === false) avisos.push({ archivo: nombre, aviso: `F04: la suma de líneas (${fmtEuro(ficha.sumaLineas)}) no cuadra con el total (${fmtEuro(ficha.importeTotal)})` });
     if (ficha.importeTotal == null) avisos.push({ archivo: nombre, aviso: 'sin importe total extraído' });
+    // anon.riesgo se calcula siempre (aunque se use el texto crudo para la
+    // ficha): sigue siendo la señal de qué archivos contienen datos
+    // sensibles, útil incluso en modo --sin-anonimizar para saber qué mirar
+    // con más cuidado antes de repartir el documento.
     if (anon.riesgo === 'alto') avisos.push({ archivo: nombre, aviso: `riesgo ALTO de datos personales — contextos: ${anon.contextos.join('; ')}` });
   } catch (err) {
-    fallos.push({ archivo: nombre, motivo: `error de proceso: ${err.message}` });
+    const motivo = `error de proceso: ${err.message}`;
+    fallos.push({ archivo: nombre, motivo });
+    elementosPorArchivo.push({ archivo: nombre, error: motivo });
   }
 }
 
@@ -178,4 +199,19 @@ const resumenRegistro = { total: fichas.length };
 const informe = informeConsolidadoMarkdown(entradas, patrones, resumenRegistro);
 const salidaInforme = join(carpeta, 'informe_consolidado.md');
 writeFileSync(salidaInforme, informe);
-console.log(`Informe consolidado guardado en: ${salidaInforme}`);
+console.log(`Informe consolidado (criterio editorial) guardado en: ${salidaInforme}`);
+
+// Hechos objetivos de CADA archivo subido, sin criterio editorial — cobertura
+// por archivo, no por número de decreto. Para comprobar la extracción antes
+// de que nadie interprete nada.
+const resumenFichas = resumenFichasMarkdown(elementosPorArchivo, { anonimo: !sinAnonimizar });
+const salidaResumen = join(carpeta, 'resumen_fichas.md');
+writeFileSync(salidaResumen, resumenFichas);
+console.log(`Resumen de fichas (hechos, sin interpretar) guardado en: ${salidaResumen}`);
+console.log(`  → ${elementosPorArchivo.length} archivo(s) recibido(s), ${elementosPorArchivo.filter(e => e.ficha).length} con ficha, ${elementosPorArchivo.filter(e => e.error).length} sin leer.`);
+
+// Mismo resumen, en Word — el formato que de verdad va a usar el grupo.
+const salidaDocx = join(carpeta, sinAnonimizar ? 'resumen_fichas_sin_anonimizar.docx' : 'resumen_fichas.docx');
+const blobDocx = await resumenFichasDocxBlob(elementosPorArchivo, { anonimo: !sinAnonimizar });
+writeFileSync(salidaDocx, Buffer.from(await blobDocx.arrayBuffer()));
+console.log(`Resumen de fichas en Word guardado en: ${salidaDocx}${sinAnonimizar ? '  (SIN anonimizar — no compartir fuera del grupo)' : ''}`);
