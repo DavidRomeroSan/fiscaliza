@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fiscaliza — resumen y lectura de decretos municipales</title>
-<meta name="description" content="Resume decretos municipales y señala qué merece una pregunta. Todo el procesamiento ocurre en tu navegador: ningún documento sale de tu equipo.">
+<title>Fiscaliza — resumen de decretos municipales</title>
+<meta name="description" content="Genera el resumen de un lote de decretos municipales en Word. Todo el procesamiento ocurre en tu navegador: ningún documento sale de tu equipo.">
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -12,69 +12,33 @@
 
 <header class="barra">
   <span class="barra__marca">Fiscaliza</span>
-  <span class="barra__lema">Decretos municipales · ficha técnica y lectura de oposición</span>
-  <span class="barra__espacio"></span>
-  <span class="barra__dato" id="barraRegistro">Registro local: <strong>0</strong> decretos</span>
+  <span class="barra__lema">Resumen de decretos municipales</span>
 </header>
 
 <main class="envoltorio">
   <div class="rejilla">
 
-    <section>
+    <section class="bloque">
       <div class="soltar" id="zonaSoltar" tabindex="0" role="button"
-            aria-label="Seleccionar decretos para analizar">
-        <p class="soltar__titulo">Suelta aquí los decretos</p>
-        <p class="soltar__pie">PDF · DOCX · TXT — nada sale de este equipo</p>
+            aria-label="Subir decretos">
+        <p class="soltar__titulo">Sube o arrastra los decretos</p>
+        <p class="soltar__pie">Uno o varios · PDF · DOCX · TXT — nada sale de este equipo</p>
         <input type="file" id="entradaArchivos" multiple accept=".pdf,.docx,.txt" class="oculto-visual">
       </div>
 
+      <label class="opcion-casilla">
+        <input type="checkbox" id="chkSinAnonimizar" checked>
+        Mostrar nombres y DNI de particulares (documento interno — no lo compartas fuera del grupo)
+      </label>
+
+      <button class="boton boton--principal boton--grande" id="btnGenerarResumen" disabled>
+        Generar resumen y descargar (Word)
+      </button>
+
       <div class="estado" id="estado" hidden></div>
-
-      <div class="vacio" id="vacio">
-        Todavía no has analizado nada. Sube uno o varios decretos: cada uno aparece aquí con su
-        ficha técnica, y cuando quieras verlo todo junto, pulsa «Informe consolidado» en el
-        panel de la derecha para un único documento con todos los hallazgos, cada uno con su
-        número de decreto.
-      </div>
-
-      <div class="lista" id="lista"></div>
     </section>
 
     <aside class="lateral">
-
-      <div class="bloque">
-        <h2 class="bloque__titulo">Registro acumulado</h2>
-        <div id="panelRegistro">
-          <p class="nota-privacidad">Sin decretos guardados todavía.</p>
-        </div>
-        <div class="acciones">
-          <button class="boton boton--pleno boton--principal" id="btnPatrones">Informe consolidado</button>
-          <button class="boton" id="btnExportarRegistro">Copia de seguridad</button>
-          <button class="boton" id="btnImportarRegistro">Restaurar / traer de otro equipo</button>
-          <button class="boton boton--peligro" id="btnBorrarRegistro">Borrar registro</button>
-          <input type="file" id="entradaRegistro" accept=".json" class="oculto-visual">
-        </div>
-      </div>
-
-      <div class="bloque">
-        <h2 class="bloque__titulo">Resumen completo de un lote</h2>
-        <p class="nota-privacidad">
-          Sube todos los decretos de una tanda (por ejemplo, los de una sesión) y genera un único
-          Word con la ficha técnica de cada archivo, uno detrás de otro — para comprobar la
-          extracción a escala antes de repartir nada.
-        </p>
-        <label class="opcion-casilla">
-          <input type="checkbox" id="chkSinAnonimizar">
-          Mostrar nombres y DNI de particulares (documento interno — no lo compartas fuera del grupo)
-        </label>
-        <div class="acciones">
-          <button class="boton" id="btnSeleccionarLote">Seleccionar archivos del lote</button>
-          <input type="file" id="entradaLote" multiple accept=".pdf,.docx,.txt" class="oculto-visual">
-          <button class="boton boton--principal" id="btnResumenLote" disabled>Generar resumen (Word)</button>
-        </div>
-        <div class="estado" id="estadoLote" hidden></div>
-      </div>
-
       <div class="bloque">
         <h2 class="bloque__titulo">Dónde están tus datos</h2>
         <p class="nota-privacidad">
@@ -82,31 +46,18 @@
           se analizan y se descartan. No hay servidor, no hay cuenta, no hay copia remota.
         </p>
         <p class="nota-privacidad">
-          El registro acumulado guarda solo datos estructurados —importes, expedientes,
-          proveedores, motivos de reparo—, nunca el texto íntegro ni nombres de particulares.
-        </p>
-        <p class="nota-privacidad">
-          Si trabajas desde más de un ordenador, el registro no se comparte solo:
-          usa <strong>Copia de seguridad</strong> en uno y <strong>Restaurar</strong> en el
-          otro. Combina lo que traes con lo que ya hubiera, no lo sustituye.
-        </p>
-        <p class="nota-privacidad">
-          El filtro de datos personales <strong>reduce el riesgo, no lo elimina</strong>.
-          Revisa siempre el resultado antes de compartirlo.
-        </p>
-        <p class="nota-privacidad">
-          El «Resumen completo de un lote» con la casilla marcada es la única excepción: genera
-          un documento SIN anonimizar, pensado solo para circular dentro del grupo municipal.
+          Con la casilla marcada, el Word que descargas lleva los nombres y DNI tal cual
+          constan en los decretos — es un documento de trabajo interno, no lo compartas
+          fuera del grupo municipal.
         </p>
       </div>
-
     </aside>
+
   </div>
 </main>
 
 <footer class="pie">
-  Fiscaliza · herramienta de trabajo interno · el análisis se ejecuta íntegramente en el navegador<br>
-  Las alertas no son conclusiones ni acusaciones: son puntos que merecen una pregunta.
+  Fiscaliza · herramienta de trabajo interno · el análisis se ejecuta íntegramente en el navegador
 </footer>
 
 <script type="module" src="js/app.js"></script>
