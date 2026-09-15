@@ -355,6 +355,15 @@ async function refrescarRegistro() {
   for (const [k, v] of Object.entries(r.porMandato)) {
     html += `<div class="cifra"><span>${esc(k)}</span><b>${v}</b></div>`;
   }
+
+  // El registro vive solo en este navegador. Si trabajas también desde otro
+  // ordenador, esto es lo único que te avisa de que hay decretos aquí que
+  // todavía no has llevado al otro sitio.
+  const pendientes = await registro.pendientesDeCopia();
+  if (pendientes > 0) {
+    html += `<div class="cautela"><span class="cautela__marca">!</span><span>${pendientes} decreto(s) sin copia de seguridad. Si usas también otro ordenador, exporta antes de cambiar de equipo.</span></div>`;
+  }
+
   $('#panelRegistro').innerHTML = html;
 }
 
@@ -489,6 +498,8 @@ function iniciar() {
   $('#btnExportarRegistro').addEventListener('click', async () => {
     descargar(`registro_fiscaliza_${new Date().toISOString().slice(0, 10)}.json`,
       await registro.exportarJson(), 'application/json');
+    registro.marcarCopiaHecha();
+    await refrescarRegistro();
   });
 
   $('#btnImportarRegistro').addEventListener('click', () => $('#entradaRegistro').click());
@@ -496,10 +507,16 @@ function iniciar() {
     const f = e.target.files[0];
     if (!f) return;
     try {
-      const n = await registro.importarJson(await f.text());
+      // Se combina con lo que ya hay en este navegador, no lo sustituye: así
+      // se puede traer aquí lo analizado en otro ordenador sin perder nada.
+      const r = await registro.importarJson(await f.text());
       await refrescarRegistro();
-      mostrarEstado(`Restauradas ${n} fichas en el registro local.`);
-      setTimeout(ocultarEstado, 3500);
+      mostrarEstado(
+        r.nuevos > 0
+          ? `${r.nuevos} decreto(s) nuevo(s) añadidos al registro${r.actualizados ? ` (${r.actualizados} ya existían y se han actualizado)` : ''}.`
+          : `Nada nuevo que añadir: los ${r.actualizados} decretos del archivo ya estaban en este registro.`
+      );
+      setTimeout(ocultarEstado, 4000);
     } catch (err) {
       mostrarEstado('No se ha podido restaurar: ' + err.message, 'error');
     }

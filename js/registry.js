@@ -159,14 +159,51 @@ export async function exportarJson() {
   );
 }
 
+/**
+ * Combina un JSON exportado con el registro ya presente: no lo sustituye.
+ * Es lo que permite llevar el registro de un concejal entre su ordenador de
+ * casa y el del despacho — exportar en uno, importar en el otro— sin perder
+ * lo que ya hubiera en el destino. Se distingue lo nuevo de lo que ya estaba
+ * (y se ha actualizado) para que la persona sepa si de verdad ha traído
+ * decretos que faltaban o solo ha repetido una copia ya hecha.
+ */
 export async function importarJson(texto) {
   const datos = JSON.parse(texto);
   if (!Array.isArray(datos.fichas)) throw new Error('El archivo no tiene el formato esperado.');
+  const existentes = new Set((await listar()).map(f => f.clave));
   const store = await tx('readwrite');
   await Promise.all(datos.fichas.map(f => new Promise((res, rej) => {
     const req = store.put(f);
     req.onsuccess = res;
     req.onerror = () => rej(req.error);
   })));
-  return datos.fichas.length;
+  const nuevos = datos.fichas.filter(f => !existentes.has(f.clave)).length;
+  return { total: datos.fichas.length, nuevos, actualizados: datos.fichas.length - nuevos };
+}
+
+/* ─────────── aviso de copia de seguridad pendiente ─────────── */
+//
+// Quien trabaja desde varios ordenadores necesita acordarse de exportar antes
+// de cambiar de equipo. La fecha de la última copia se guarda en localStorage
+// (no es un dato del decreto, es una preferencia de este navegador) y se
+// contrasta con `guardadoEn` de cada ficha para avisar solo cuando hay
+// decretos nuevos que todavía no se han llevado a ningún sitio.
+
+const CLAVE_ULTIMA_COPIA = 'fiscaliza:ultimaCopia';
+
+export function marcarCopiaHecha() {
+  try { localStorage.setItem(CLAVE_ULTIMA_COPIA, new Date().toISOString()); } catch { /* localStorage no disponible: no se avisará, pero la copia se ha hecho igual */ }
+}
+
+function ultimaCopia() {
+  try { return localStorage.getItem(CLAVE_ULTIMA_COPIA); } catch { return null; }
+}
+
+/** Nº de decretos guardados después de la última copia de seguridad conocida. */
+export async function pendientesDeCopia() {
+  const todas = await listar();
+  if (!todas.length) return 0;
+  const desde = ultimaCopia();
+  if (!desde) return todas.length;
+  return todas.filter(f => f.guardadoEn > desde).length;
 }
