@@ -204,7 +204,7 @@ export function informeConsolidadoMarkdown(entradas, patrones = [], resumenRegis
 /* ─────────── descarga ─────────── */
 
 export function descargar(nombre, contenido, tipo = 'text/markdown;charset=utf-8') {
-  const blob = new Blob([contenido], { type: tipo });
+  const blob = contenido instanceof Blob ? contenido : new Blob([contenido], { type: tipo });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -215,5 +215,5 @@ export function descargar(nombre, contenido, tipo = 'text/markdown;charset=utf-8
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export const nombreArchivo = (ficha, sufijo) =>
-  `decreto_${(ficha.decreto || ficha.expediente || 'sn').replace(/[\/\s]/g, '-')}_${sufijo}.md`;
+export const nombreArchivo = (ficha, sufijo, extension = 'md') =>
+  `decreto_${(ficha.decreto || ficha.expediente || 'sn').replace(/[\/\s]/g, '-')}_${sufijo}.${extension}`;
