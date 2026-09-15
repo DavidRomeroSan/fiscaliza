@@ -440,6 +440,18 @@ body {
 
 .boton--pleno { width: 100%; }
 
+.boton--grande {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 16px 20px;
+  font-size: 13px;
+}
+
+.boton:disabled { opacity: .4; cursor: not-allowed; }
+.boton:disabled:hover { background: transparent; color: var(--tinta); }
+.boton--principal:disabled:hover { background: var(--archivo); color: #fff; }
+
 /* ─────────────── estados ─────────────── */
 
 .estado {
