@@ -313,8 +313,13 @@ const TIPOS = [
   {
     id: 'junta_gobierno',
     nombre: 'Convocatoria de Junta de Gobierno Local',
+    // Peso por encima de 'nominas' (100) a propósito: el orden del día de
+    // una convocatoria real (2026-1533) incluye un punto sobre nóminas y
+    // seguros sociales entre los ocho a tratar, y con menos peso que
+    // 'nominas' la convocatoria entera se etiquetaba como si fuera ella
+    // misma la resolución de nóminas — no lo es, solo la convoca.
     test: (t) => /convocatoria/i.test(t) && /junta de gobierno local/i.test(t) && /orden del d[íi]a/i.test(t),
-    peso: 60,
+    peso: 110,
   },
   {
     id: 'bonificacion',
@@ -427,6 +432,12 @@ export function clasificar(texto, nLineas = 0) {
 
 export function extraerExpediente(texto) {
   return (
+    // Las convocatorias de Junta de Gobierno Local usan su propio formato
+    // "JGL/2026/32" en vez del numérico habitual. Se comprueba antes que el
+    // patrón genérico: si no, "Expediente: JGL/2026/32" no casaba (no son
+    // solo cifras) y la búsqueda seguía hasta coger, equivocado, el primer
+    // expediente numérico citado dentro de un punto del orden del día.
+    buscar(texto, /\bExpediente\s*N?[.ºo°]*\s*:?\s*(JGL\/\d{4}\/\d{1,4})/i) ||
     buscar(texto, /\bEXPEDIENTE\s+N?[.ºo°]*\s*:?\s*(\d{1,6}\/\d{4})/i) ||
     buscar(texto, /\bExpediente\s*N?[.ºo°]*\s*:?\s*(\d{1,6}\/\d{4})/i) ||
     buscar(texto, /\bEXTE[.:]?\s*(\d{1,6}\/\d{4})/i) ||
@@ -624,6 +635,42 @@ export function extraerBeneficiario(texto) {
   return m ? m[1].replace(/\s+/g, ' ').trim() : null;
 }
 
+/**
+ * Puntos del orden del día de una convocatoria de Junta de Gobierno Local.
+ * Sin esto, una convocatoria solo decía "sesión ordinaria del día X a las
+ * 9:00" — sin los puntos que se van a tratar, que es justo lo que interesa
+ * fiscalizar ANTES de que se celebre la sesión, no después.
+ */
+export function extraerOrdenDelDia(texto) {
+  const bloque = buscar(
+    texto,
+    /ORDEN DEL D[ÍI]A:?\s*([\s\S]{20,4000}?)(?:\n\s*SEGUNDO\.|\n\s*TERCERO\.|$)/i
+  );
+  if (!bloque) return [];
+
+  // El pie de esPublico Gestiona (ver datosDelPieDecreto) es texto rotado en
+  // el margen: itemsALineas() (extract.js) lo intercala como líneas sueltas
+  // entre las del cuerpo, y aquí caería en medio de la frase de un punto del
+  // orden del día si no se quita antes de trocear por número.
+  const limpio = bloque
+    .replace(/^\s*Fecha:\s*\d{1,2}\/\d{1,2}\/\d{4}\s*$/gim, '')
+    .replace(/^\s*N[uú]mero:\s*\d{4}[-\/]\d{3,5}\s*$/gim, '')
+    .replace(/^\s*DECRETO\s*$/gim, '');
+
+  // Cada punto empieza una línea propia con "N. " (1 o 2 cifras: los códigos
+  // de expediente y aplicación del cuerpo tienen 4 cifras o más, así que no
+  // se confunden). Se corta en el siguiente punto, en el siguiente apartado
+  // con letra (B), C)...) o al final del bloque.
+  const puntos = [];
+  const re = /(?:^|\n)\s*\d{1,2}\.\s+([\s\S]+?)(?=\n\s*\d{1,2}\.\s|\n\s*[A-Z]\)\s|$)/g;
+  let m;
+  while ((m = re.exec(limpio)) !== null) {
+    const punto = m[1].replace(/\s+/g, ' ').trim();
+    if (punto) puntos.push(punto);
+  }
+  return puntos;
+}
+
 /* ────────────────────────── el reparo, en detalle ────────────────────────── */
 
 /**
@@ -747,6 +794,7 @@ export function analizar(texto, nombreArchivo = '') {
       expediente: null,
       objeto: 'Índice del libro de decretos: no es un decreto individual, es el listado de la remesa recibida.',
       beneficiario: null,
+      ordenDelDia: [],
       fecha: null,
       fechaOrigen: null,
       firmante: null,
@@ -801,6 +849,7 @@ export function analizar(texto, nombreArchivo = '') {
     expediente: extraerExpediente(texto),
     objeto: extraerObjeto(texto),
     beneficiario: extraerBeneficiario(texto),
+    ordenDelDia: extraerOrdenDelDia(texto),
     fecha: fecha.iso,
     fechaOrigen: fecha.origen,
     firmante,

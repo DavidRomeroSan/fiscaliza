@@ -669,6 +669,56 @@ Fdo. Juan Cobo Ortiz.`
 },
 
 {
+  id: 'convocatoria-jgl-2026-1533',
+  // Extracto real del decreto 2026-1533 (convocatoria de JGL), con el mismo
+  // desorden que produce pdf.js: los fragmentos del pie ("Fecha: ...",
+  // "Número: ...", "DECRETO" sueltos) se intercalan como líneas propias
+  // dentro del bloque del orden del día, partiendo la frase del punto 3 y
+  // separando las dos líneas del punto 5. Y el punto "2024/4/PIDE-21." del
+  // punto 5 tiene un número de 1-2 cifras seguido de punto EN MEDIO de una
+  // línea — sin anclar la búsqueda al principio de línea, se confundía con
+  // el arranque de un punto nuevo del orden del día.
+  esperado: { tipo: 'junta_gobierno', expediente: 'JGL/2026/32' },
+  texto: `Expediente: JGL/2026/32
+Asunto: Resolución de Alcaldía
+
+DECRETO
+
+De conformidad con lo dispuesto en el artículo 21.c) de la Ley 7/1985 de 2 de abril Reguladora de las Bases del Régimen Local y arts. 41.4 y 112.3 del Real Decreto 2568/1986 de 28 de noviembre por el que se aprueba el Reglamento de Organización, Funcionamiento y Régimen Jurídico de las Entidades Locales, RESUELVO:
+
+PRIMERO. Convocar Sesión de carácter ordinario, a celebrar por la Junta de Gobierno Local el día 25 de agosto de 2026 a las 9:00 horas, en primera convocatoria y una hora más tarde en segunda convocatoria en caso de no existir el quórum exigido en la primera, en el Despacho de Alcaldía del Ayuntamiento, a fin de resolver los puntos incluidos en el siguiente ORDEN DEL DÍA:
+
+A) Parte resolutiva.
+
+1. Aprobación del Acta de la sesión extraordinaria celebrada el día 13 de agosto de 2026.
+2. HACIENDA Y GESTIÓN ECONÓMICA. Expediente 4983/2026. Propuesta de Gasto.
+3. HACIENDA Y GESTIÓN ECONÓMICA. Expediente 4496/2026. Aprobación nóminas
+Fecha: 24/08/2026
+agosto y seguros sociales de julio 2026.
+4. PERSONAL. Expediente 4410/2026. Reconocimiento de Antigüedad por el Personal de la Entidad.
+5. CONTRATACIONES. Expediente 8886/2025. Aprobación de la certificación nº 2 referida al
+expediente de contratación para las "obras en el polideportivo municipal de deportes
+Número: 2026-1533
+DECRETO
+181755908: Pabellón mejora de salas, eficiencia energética, acondicionamiento de canastas, sustitución puerta emergencia, etc. 2024/4/PIDE-21.
+6. CONTRATACIÓN. Expediente 2061/2025. Acuerdo de revocación del acuerdo adoptado en el punto nº 6 del orden de la sesión de la Junta de Gobierno Local de 2 de junio de 2026
+7. CONTRATACIÓN. Expediente 1748/2026. Adjudicación de la concesión demanial de uso privativo del puesto nº 6 del Mercado de Abastos destinado a frutería.
+8. CONTRATACIÓN. Expediente 3484/2026. cesión de uso provisional de los espacios destinados en el PP2 a la siguiente Asociación o Entidad Ciudadana de Santa Fe para la instalación y explotación de una de las tres casetas de asociaciones o tradicionales en el marco de la celebración de las Fiestas de Santa Fe 2026.
+
+B) Comunicaciones de interés.
+
+C) Asuntos urgentes.
+
+SEGUNDO. Notificar la presente Resolución a los miembros integrantes de la Junta de Gobierno Local, advirtiéndoles que, conforme a lo dispuesto en el art. 12.1 del ROF, deberán comunicar con la antelación necesaria cualquier causa justificada que implique la imposibilidad de asistir a la citada sesión.
+
+TERCERO. Que por la Secretaría General se ponga a disposición de los/as Sres./as Concejales/as la documentación de los asuntos incluidos en el orden del día.
+
+Fecha: 24/08/2026
+Número: 2026-1533
+DECRETO`
+},
+
+{
   id: 'indice-libro-decretos',
   // El índice del lote (se sube junto a los decretos) no es un decreto: sin
   // reconocerlo aparte, el motor le atribuía número, fecha y objeto sacados

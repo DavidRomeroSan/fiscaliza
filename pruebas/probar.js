@@ -252,6 +252,24 @@ const fichaAyudaSinAnonimizar = analizar(textoAyudaCrudo, 'ayuda.pdf');
 comprobar(fichaAyudaSinAnonimizar.beneficiario === 'ELENA GRANADOS MATEOS',
   `beneficiario real sobre texto SIN anonimizar (modo "uso interno") → "${fichaAyudaSinAnonimizar.beneficiario}"`);
 
+console.log('\n━━━ orden del día de una convocatoria de JGL ━━━');
+const jgl = fichas.find(f => f.archivo.startsWith('convocatoria-jgl-2026-1533'));
+comprobar(jgl.ordenDelDia.length === 8, `8 puntos extraídos, ni más ni menos → ${jgl.ordenDelDia.length}`);
+comprobar(/^Aprobación del Acta/.test(jgl.ordenDelDia[0] || ''), `punto 1 → "${jgl.ordenDelDia[0]}"`);
+comprobar(
+  /^HACIENDA Y GESTIÓN ECONÓMICA\. Expediente 4496\/2026\. Aprobación nóminas agosto y seguros sociales de julio 2026\.$/.test(jgl.ordenDelDia[2] || ''),
+  `punto 3 recompuesto sin el "Fecha: 24/08/2026" del pie colado en medio → "${jgl.ordenDelDia[2]}"`
+);
+comprobar(
+  /PIDE-21\.$/.test(jgl.ordenDelDia[4] || ''),
+  `punto 5 completo, sin el "Número: 2026-1533 DECRETO" del pie colado en medio → "${jgl.ordenDelDia[4]}"`
+);
+comprobar(
+  /^CONTRATACIÓN\. Expediente 2061\/2025/.test(jgl.ordenDelDia[5] || ''),
+  `punto 6 no se confunde con el "21." de "PIDE-21." del punto anterior → "${jgl.ordenDelDia[5]}"`
+);
+comprobar(/^CONTRATACIÓN\. Expediente 3484\/2026/.test(jgl.ordenDelDia[7] || ''), `punto 8 (el último) → "${jgl.ordenDelDia[7]}"`);
+
 console.log('\n━━━ índice del libro de decretos: no es un decreto individual ━━━');
 const indice = fichas.find(f => f.archivo.startsWith('indice-libro-decretos'));
 comprobar(indice.tipo === 'indice', `clasificado como índice → "${indice.tipo}"`);
