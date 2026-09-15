@@ -32,6 +32,7 @@ import { anonimizar } from '../js/redact.js';
 import { extraerLineas, terceros } from '../js/lineas.js';
 import { analizar, datosNoIncluidos, fmtEuro } from '../js/parse.js';
 import { evaluarDecreto, evaluarPatrones } from '../js/rules.js';
+import { informeConsolidadoMarkdown } from '../js/export.js';
 
 /* ─────────── misma reconstrucción de líneas que extract.js ─────────── */
 
@@ -84,6 +85,7 @@ const archivos = readdirSync(carpeta).filter(f => /\.pdf$/i.test(f)).sort();
 console.log(`Encontrados ${archivos.length} PDF en ${carpeta}\n`);
 
 const fichas = [];
+const entradas = []; // { ficha, alertas } — lo que pide informeConsolidadoMarkdown
 const fallos = [];
 const avisos = []; // { archivo, tipo de aviso, detalle } — para revisar a mano
 
@@ -103,6 +105,7 @@ for (const nombre of archivos) {
     const ficha = analizar(anon.textoAnonimo, nombre);
     const alertas = evaluarDecreto(ficha);
     fichas.push(ficha);
+    entradas.push({ ficha, alertas });
 
     // Señales de alerta sobre la PROPIA extracción, no sobre el Ayuntamiento:
     // esto es lo que hay que revisar a mano contra el PDF original.
@@ -167,3 +170,12 @@ for (const p of patrones) {
 const salida = join(carpeta, '_validacion.json');
 writeFileSync(salida, JSON.stringify({ generado: new Date().toISOString(), fichas, avisos, fallos }, null, 2));
 console.log(`\nVolcado estructurado completo guardado en: ${salida}`);
+
+// Mismo informe consolidado que genera el botón "Informe consolidado" en la
+// interfaz — para revisar a mano contra los PDF originales antes de confiar
+// en la herramienta para algo público. También dentro de la carpeta protegida.
+const resumenRegistro = { total: fichas.length };
+const informe = informeConsolidadoMarkdown(entradas, patrones, resumenRegistro);
+const salidaInforme = join(carpeta, 'informe_consolidado.md');
+writeFileSync(salidaInforme, informe);
+console.log(`Informe consolidado guardado en: ${salidaInforme}`);
