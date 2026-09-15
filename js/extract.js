@@ -83,12 +83,16 @@ async function textoDeDocx(buffer) {
 }
 
 /** Quita pies institucionales y códigos de validación repetidos en cada página. */
-function limpiar(texto) {
+export function limpiar(texto) {
   return texto
     .replace(MUNICIPIO.pieInstitucional, ' ')
     .replace(/C[óo]d\.\s*Validaci[óo]n:\s*\S+/gi, ' ')
     .replace(/Verificaci[óo]n:\s*https?:\/\/\S+/gi, ' ')
-    .replace(/Documento firmado electr[óo]nicamente desde la plataforma \S+/gi, ' ')
+    // El nombre de la plataforma son DOS palabras ("esPublico Gestiona"). Si
+    // solo se borra una, la que queda ("Gestiona") se cuela en el nombre del
+    // firmante cuando el pie de página va justo debajo de la firma — porque
+    // el patrón de firmante permite saltos de línea dentro del nombre.
+    .replace(/Documento firmado electr[óo]nicamente desde la plataforma \S+(?:\s+Gestiona\b)?/gi, ' ')
     .replace(/P[áa]gina \d+ de \d+/gi, ' ')
     .replace(/Plaza de España, 2[^\n]{0,80}/gi, ' ')
     .replace(/[ \t]{2,}/g, ' ')

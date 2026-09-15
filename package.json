@@ -2,5 +2,8 @@
   "name": "fiscaliza",
   "version": "0.1.0",
   "type": "module",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "pdfjs-dist": "4.0.379"
+  }
 }
