@@ -528,4 +528,55 @@ El Alcalde Presidente
 Fdo. Juan Cobo Ortiz`
 },
 
+{
+  id: 'delegacion-merlo-urbanismo',
+  // Confirmado con David: varios concejales firman a diario por delegación
+  // (Hacienda, Urbanismo, Mantenimiento...) citando todos la misma
+  // Resolución de Alcaldía 2023-1200. Sin reconocerlo, la atribución de
+  // mandato marcaba "confianza: revisar" en el 85 % de una serie real de
+  // 2026, como si una delegación legítima fuera una anomalía.
+  esperado: { mandato: 'pp-2023' },
+  texto: `EXPEDIENTE 9001/2026 Asunto: Autorización caseta
+
+DON ANDRES MERLO RODRIGUEZ, CONCEJAL DELEGADO DE URBANISMO, PERSONAL Y CONTRATACIÓN DEL EXCMO AYUNTAMIENTO DE SANTA FE (GRANADA), en virtud de Resolución de Alcaldía n.º 2023-1200, de 22 de junio de 2023, y en uso de las atribuciones que legalmente me confiere la vigente Legislación de Régimen Local, vengo a dictar el siguiente
+
+HECHOS Y FUNDAMENTOS DE DERECHO
+
+Vista la solicitud presentada para la instalación de casetas de feria con motivo de la celebración de las Fiestas de Santa Fe 2026.
+
+Fecha: 27/08/2026
+
+RESOLUCIÓN
+
+PRIMERO: Conceder la autorización solicitada.
+
+En Santa Fe a fecha de firma electrónica.
+
+EL CONCEJAL DELEGADO
+Fdo. D. Andrés Merlo Rodríguez.`
+},
+
+{
+  id: 'delegacion-leyva-mantenimiento',
+  esperado: { mandato: 'pp-2023' },
+  texto: `RESOLUCIÓN Expediente nº: 4658/2026
+
+DOÑA SUSANA LEYVA PEREZ, CONCEJAL DELEGADA DE MANTENIMIENTO, MEDIO AMBIENTE, GOBERNACIÓN, PATRIMONIO, OBRAS PÚBLICAS E INFRAESTRUCTURAS DEL EXCMO. AYUNTAMIENTO DE SANTA FE, en virtud de Resolución de Alcaldía n.º 2023-1200, de 22 de junio de 2023, y en uso de las atribuciones que me confiere la Legislación vigente de Régimen Local vengo a dictar la siguiente
+
+HECHOS Y FUNDAMENTOS DE DERECHO
+
+Visto el escrito presentado en el que solicita que se pinte la línea amarilla frente a su vado.
+
+Fecha: 26/08/2026
+
+RESOLUCIÓN
+
+PRIMERO: Autorizar la línea amarilla del vado.
+
+En Santa Fe, a fecha de firma electrónica
+
+LA CONCEJAL DELEGADA
+FDO: Dª. Susana Leyva Pérez.`
+},
+
 ];

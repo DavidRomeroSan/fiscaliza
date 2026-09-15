@@ -151,6 +151,16 @@ comprobar(!/FRANCISCA ÁLVAREZ SÁNCHEZ|FRANCISCA ALVAREZ SANCHEZ/i.test(anonRen
 comprobar(!/24093093H/.test(anonRenta.textoAnonimo), 'su NIF queda anonimizado');
 comprobar(anonRenta.contextos.some(c => /pensión/i.test(c)), 'se marca el contexto sensible de pensión/defunción');
 
+console.log('\n━━━ delegación de firma: no marcar "revisar" cuando es legítima ━━━');
+const merlo = fichas.find(f => f.archivo.startsWith('delegacion-merlo'));
+const leyva = fichas.find(f => f.archivo.startsWith('delegacion-leyva'));
+comprobar(merlo.mandato.confianza === 'alta', `Merlo (concejal delegado, masc.) → confianza "${merlo.mandato.confianza}"`);
+comprobar(merlo.mandato.nota === null, 'Merlo: sin nota de aviso — la delegación ya consta en el propio decreto');
+comprobar(merlo.firmante === 'ANDRES MERLO RODRIGUEZ', `firmante correcto → "${merlo.firmante}"`);
+comprobar(leyva.mandato.confianza === 'alta', `Leyva (concejala delegada, fem.) → confianza "${leyva.mandato.confianza}"`);
+comprobar(leyva.mandato.nota === null, 'Leyva: sin nota de aviso');
+comprobar(leyva.firmante === 'SUSANA LEYVA PEREZ', `firmante correcto → "${leyva.firmante}"`);
+
 console.log('\n━━━ formato D con columna de Aplicación: no confundir el código con el importe ━━━');
 const seguros = fichas.find(f => f.archivo.startsWith('seguros-sociales-julio-2026'));
 const importesReales = [8038.88, 4425.95, 27450.57, 808.52, 7376.52, 4925.74];
