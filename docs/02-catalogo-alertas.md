@@ -1,6 +1,6 @@
 # Catálogo de alertas
 
-*38 alertas: 32 de documento y 6 de patrón. Derivadas de los motivos que el propio Interventor formula en los decretos reales del Ayuntamiento de Santa Fe.*
+*41 alertas: 35 de documento y 6 de patrón. Derivadas de los motivos que el propio Interventor formula en los decretos reales del Ayuntamiento de Santa Fe.*
 
 **Cómo leer este catálogo.** Una alerta no afirma que exista una irregularidad. Señala un punto que merece una pregunta. La columna *doble filo* marca las que se activan también con decretos de mandatos anteriores: esas exigen comprobar la serie completa antes de usarse en público.
 
@@ -41,8 +41,13 @@
 | P06 | Pago de una pensión que no es competencia municipal | Alta | — |
 | P07 | Personal contratado fuera de plantilla y RPT | Alta | — |
 | P08 | Volumen de contratación temporal incompatible con el carácter "excepcional" | Media | — |
+| P09 | Irregularidades en la asignación de trabajo del personal | Alta | **Sí** |
+| P10 | Contratos laborales que pueden perjudicar a las arcas municipales | Alta | **Sí** |
+| P11 | Personal en un grupo de programa distinto del presupuestado | Media | — |
 
-**Las cuatro primeras son doble filo sin excepción.** El texto del reparo de nóminas es idéntico bajo la alcaldía del PSOE y la del PP: los mismos cinco puntos, la misma defensa. Usar cualquiera de ellas sin desglosar por mandato es una invitación a que te la devuelvan.
+**Las seis primeras y P09-P10 son doble filo sin excepción.** El texto del reparo de nóminas es idéntico bajo la alcaldía del PSOE y la del PP: los mismos cinco puntos, la misma defensa. Usar cualquiera de ellas sin desglosar por mandato es una invitación a que te la devuelvan.
+
+**P09 y P10** — Los dos motivos que dieron origen a este catálogo (docs/00-proyecto.md los cita como el ejemplo fundacional) se detectaban desde el principio en `parse.js` pero nunca tuvieron alerta propia en `rules.js`: un decreto suelto con cualquiera de las dos irregularidades no generaba ningún hallazgo visible, ni en la ficha ni en el informe consolidado — solo asomaban de rebote si se repetían tres veces (Z02). Encontrado revisando a mano el informe consolidado de una serie real contra los PDF originales.
 
 **P05** — La defensa de la RPT en elaboración aparece en decretos de 2023. Comprobar si esa RPT llegó a aprobarse convierte una excusa repetida en una pregunta con fecha.
 
