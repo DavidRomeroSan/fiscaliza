@@ -91,6 +91,20 @@ const alertasPsoe = evaluarDecreto(psoe);
 comprobar(alertasPsoe.some(a => a.id === 'P01' && a.dobleFilo),
   'la alerta P01 se activa también sobre el decreto del PSOE y está marcada como doble filo');
 
+console.log('\n━━━ P09/P10: motivos detectados desde el principio pero sin alerta propia ━━━');
+// Encontrado revisando a mano el informe consolidado de una serie real
+// contra los PDF originales: MOTIVOS_REPARO detectaba estos dos motivos
+// (docs/00-proyecto.md los cita como ejemplo fundacional del catálogo) pero
+// rules.js nunca les dio una alerta — se quedaban invisibles en la ficha del
+// propio decreto, y solo asomaban de rebote si se repetían 3 veces (Z02).
+comprobar(alertasPsoe.some(a => a.id === 'P09' && a.dobleFilo),
+  'P09 (irregularidades en la asignación de trabajo) se activa, doble filo');
+comprobar(alertasPsoe.some(a => a.id === 'P10' && a.dobleFilo),
+  'P10 (contratos laborales lesivos) se activa, doble filo');
+const alertasPp = evaluarDecreto(pp);
+comprobar(alertasPp.some(a => a.id === 'P09') && alertasPp.some(a => a.id === 'P10'),
+  'P09 y P10 también se activan sobre el decreto del PP (mismo texto de reparo, otro mandato)');
+
 console.log('\n━━━ patrones sobre el registro ━━━');
 const patrones = evaluarPatrones(fichas);
 for (const p of patrones) {

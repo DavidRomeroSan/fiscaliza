@@ -245,6 +245,45 @@ export const REGLAS = [
     replica: 'Que está en negociación con la representación sindical.',
     propuesta: 'Fijar por acuerdo plenario una fecha límite de aprobación de la RPT.',
   },
+  {
+    // Estos tres motivos ya los detectaba parse.js (MOTIVOS_REPARO) desde el
+    // principio, y docs/00-proyecto.md cita literalmente los dos primeros
+    // como ejemplo fundacional de en qué se basa el catálogo — pero nunca se
+    // les dio una alerta propia en rules.js. El motivo quedaba registrado en
+    // ficha.reparo.motivos y solo asomaba, de rebote, si se repetía tres
+    // veces en el registro (Z02): un decreto suelto con esta irregularidad
+    // no generaba ningún hallazgo visible, ni en la ficha ni en el informe
+    // consolidado. Encontrado revisando a mano el informe consolidado de
+    // una serie real contra los PDF originales.
+    id: 'P09', categoria: 'Personal', severidad: 'alta', dobleFilo: true,
+    titulo: 'Irregularidades en la asignación de trabajo del personal',
+    test: (f) => tieneMotivo(f, 'personal_irregularidades'),
+    detalle: () => 'El Interventor señala irregularidades en la asignación de trabajo de determinados empleados públicos.',
+    norma: 'Reparo de Intervención sobre nóminas',
+    pregunta: '¿A qué empleados afecta la irregularidad en la asignación de trabajo que señala Intervención, y qué medida correctora se ha adoptado?',
+    replica: 'Que responde a necesidades organizativas del servicio, no a una irregularidad de fondo.',
+    propuesta: 'Informe de la Jefatura de Personal que aclare la asignación de tareas cuestionada y su cobertura en la RPT.',
+  },
+  {
+    id: 'P10', categoria: 'Personal', severidad: 'alta', dobleFilo: true,
+    titulo: 'Contratos laborales que pueden perjudicar a las arcas municipales',
+    test: (f) => tieneMotivo(f, 'personal_contratos_lesivos'),
+    detalle: () => 'El Interventor señala la existencia de contratos laborales que pueden ocasionar perjuicio económico al Ayuntamiento.',
+    norma: 'Reparo de Intervención sobre nóminas',
+    pregunta: '¿Qué contratos laborales identifica Intervención como lesivos para las arcas municipales, y qué perjuicio económico estima?',
+    replica: 'Que son compromisos heredados o necesarios para mantener el servicio.',
+    propuesta: 'Auditoría jurídica de los contratos señalados, con dictamen sobre su modificación o extinción.',
+  },
+  {
+    id: 'P11', categoria: 'Personal', severidad: 'media',
+    titulo: 'Personal trabajando en un grupo de programa distinto del presupuestado',
+    test: (f) => tieneMotivo(f, 'personal_fuera_grupo_programa'),
+    detalle: () => 'El gasto de personal se imputa a un grupo de programa presupuestario distinto de aquel en el que realmente presta servicio, rompiendo la vinculación jurídica del crédito.',
+    norma: 'Art. 18 RD 500/1990 y Bases de Ejecución del Presupuesto',
+    pregunta: '¿Cuántos empleados están adscritos presupuestariamente a un programa distinto de aquel en el que realmente trabajan, y por qué no se ha corregido en el presupuesto siguiente?',
+    replica: 'Reorganización de servicios pendiente de reflejar en la estructura presupuestaria.',
+    propuesta: 'Corregir la adscripción presupuestaria del personal en la próxima elaboración del presupuesto.',
+  },
 
   /* ─────────── Tesorería ─────────── */
   {
@@ -602,7 +641,7 @@ const PESO = {
   // Quién cobra y cuánto encabeza la lectura: es lo primero que hay que saber
   // de una remesa de facturas. El reparo que la acompaña viene después.
   F02: 110, F01: 108, C01: 90, C02: 88, F03: 58, F04: 45, X03: 86, X01: 85, X02: 84, B01: 82,
-  P01: 80, P02: 78, P03: 76, C04: 70, C03: 68, P04: 66, P05: 60,
+  P01: 80, P09: 79, P10: 79, P02: 78, P03: 76, C04: 70, C03: 68, P04: 66, P05: 60, P11: 55,
   B03: 50, C06: 30, X05: 20, B02: 10, X04: 5,
 };
 

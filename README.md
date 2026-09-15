@@ -63,7 +63,7 @@ js/extract.js           PDF/DOCX → texto (local)
 js/redact.js            anonimización local con mapa reversible
 js/lineas.js             extracción de la relación de facturas (4 formatos)
 js/parse.js             clasificación, campos y atribución de mandato
-js/rules.js             38 alertas con norma, pregunta, réplica y propuesta
+js/rules.js             41 alertas con norma, pregunta, réplica y propuesta
 js/registry.js          registro acumulado en IndexedDB
 js/export.js            ficha por decreto + informe consolidado de todo el registro
 js/app.js               orquestación e interfaz
@@ -79,7 +79,7 @@ docs/                   proyecto, arquitectura, catálogo, protocolo
 |---|---|
 | `docs/00-proyecto.md` | Qué es, por qué, qué no hace |
 | `docs/01-arquitectura.md` | Especificación técnica, Opción 1 y Opción 3 |
-| `docs/02-catalogo-alertas.md` | Las 38 alertas y su base normativa |
+| `docs/02-catalogo-alertas.md` | Las 41 alertas y su base normativa |
 | `docs/03-protocolo-uso.md` | Una página para el resto del grupo |
 | `docs/04-prompt-claude-code.md` | Para seguir desarrollando |
 
