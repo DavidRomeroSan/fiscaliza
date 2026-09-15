@@ -117,6 +117,11 @@ function fichaDocxChildren(docx, ficha, opciones = {}) {
   }
   hijos.push(campo(docx, 'Importe', fmtEuro(ficha.importeTotal)));
 
+  if (ficha.ordenDelDia?.length) {
+    hijos.push(h2(docx, `Orden del día — ${ficha.ordenDelDia.length} punto(s)`));
+    ficha.ordenDelDia.forEach((punto) => hijos.push(vineta(docx, punto)));
+  }
+
   if (ficha.aplicaciones?.length) {
     hijos.push(campo(docx, 'Aplicaciones presupuestarias', ficha.aplicaciones.join(', ')));
   }

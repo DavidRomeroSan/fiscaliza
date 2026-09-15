@@ -49,6 +49,13 @@ export function fichaMarkdown(ficha, opciones = {}) {
   L.push(`**Importe:** ${fmtEuro(ficha.importeTotal)}`);
   L.push('');
 
+  if (ficha.ordenDelDia?.length) {
+    L.push(`**Orden del día** — ${ficha.ordenDelDia.length} punto(s):`);
+    L.push('');
+    ficha.ordenDelDia.forEach((punto, i) => L.push(`${i + 1}. ${punto}`));
+    L.push('');
+  }
+
   if (ficha.aplicaciones?.length) {
     L.push('**Aplicaciones presupuestarias:** ' + ficha.aplicaciones.join(', '));
     L.push('');
