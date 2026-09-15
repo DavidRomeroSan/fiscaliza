@@ -18,6 +18,37 @@ import {
   fichaMarkdown, informeConsolidadoMarkdown, descargar, nombreArchivo,
 } from './export.js';
 
+// La librería docx (y su descarga desde CDN) solo se carga la primera vez
+// que alguien pide de verdad un archivo Word — nunca al abrir la aplicación.
+let exportDocxMod = null;
+async function cargarExportDocx() {
+  if (!exportDocxMod) exportDocxMod = await import('./exportDocx.js');
+  return exportDocxMod;
+}
+
+/** Deshabilita el botón mientras se genera el documento, para que no se pulse dos veces. */
+async function conBotonOcupado(boton, textoOcupado, tarea) {
+  const original = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = textoOcupado;
+  try {
+    await tarea();
+  } catch (err) {
+    mostrarEstado('No se ha podido generar el documento Word: ' + err.message, 'error');
+  } finally {
+    boton.disabled = false;
+    boton.textContent = original;
+  }
+}
+
+async function descargarFichaDocx(ficha, boton) {
+  await conBotonOcupado(boton, 'Generando…', async () => {
+    const { fichaDocxBlob } = await cargarExportDocx();
+    descargar(nombreArchivo(ficha, 'ficha', 'docx'), await fichaDocxBlob(ficha),
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  });
+}
+
 const $ = (sel) => document.querySelector(sel);
 const sesion = new Map();   // id → { ficha, alertas, lectura, aviso }
 let contador = 0;
@@ -234,7 +265,8 @@ function pintarTarjeta(id, { ficha, alertas, lectura, aviso }) {
 
     <div class="panel" data-panel="ficha">${pintarFicha(ficha)}
       <div class="acciones">
-        <button class="boton" data-accion="descargar-ficha">Descargar ficha</button>
+        <button class="boton" data-accion="descargar-ficha">Descargar ficha (Markdown)</button>
+        <button class="boton" data-accion="descargar-ficha-docx">Descargar ficha (Word)</button>
       </div>
     </div>
 
@@ -256,6 +288,8 @@ function pintarTarjeta(id, { ficha, alertas, lectura, aviso }) {
     const accion = ev.target.closest('[data-accion]')?.dataset.accion;
     if (accion === 'descargar-ficha') {
       descargar(nombreArchivo(ficha, 'ficha'), fichaMarkdown(ficha));
+    } else if (accion === 'descargar-ficha-docx') {
+      descargarFichaDocx(ficha, ev.target.closest('[data-accion]'));
     }
   });
 
@@ -453,7 +487,8 @@ async function mostrarInformeConsolidado() {
     </div>
     <div class="panel">${cuerpo}
       <div class="acciones">
-        <button class="boton boton--principal" data-accion="descargar-consolidado">Descargar informe consolidado</button>
+        <button class="boton boton--principal" data-accion="descargar-consolidado">Descargar informe consolidado (Markdown)</button>
+        <button class="boton" data-accion="descargar-consolidado-docx">Descargar informe consolidado (Word)</button>
       </div>
     </div>`;
 
@@ -461,6 +496,13 @@ async function mostrarInformeConsolidado() {
     if (ev.target.closest('[data-accion="descargar-consolidado"]')) {
       descargar(`informe_consolidado_${new Date().toISOString().slice(0, 10)}.md`,
         informeConsolidadoMarkdown(entradas, patrones, r));
+    } else if (ev.target.closest('[data-accion="descargar-consolidado-docx"]')) {
+      conBotonOcupado(ev.target.closest('[data-accion]'), 'Generando…', async () => {
+        const { informeConsolidadoDocxBlob } = await cargarExportDocx();
+        descargar(`informe_consolidado_${new Date().toISOString().slice(0, 10)}.docx`,
+          await informeConsolidadoDocxBlob(entradas, patrones, r),
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      });
     }
   });
 

@@ -150,6 +150,15 @@ comprobar(!/FRANCISCA ÁLVAREZ SÁNCHEZ|FRANCISCA ALVAREZ SANCHEZ/i.test(anonRen
 comprobar(!/24093093H/.test(anonRenta.textoAnonimo), 'su NIF queda anonimizado');
 comprobar(anonRenta.contextos.some(c => /pensión/i.test(c)), 'se marca el contexto sensible de pensión/defunción');
 
+console.log('\n━━━ fmtEuro: separador de miles en importes de 4 cifras ━━━');
+// toLocaleString('es-ES', {style:'currency'}) deja estos importes sin el
+// punto de los miles (dato CLDR real, no un fallo del entorno de pruebas):
+// es justo el rango donde caen muchos decretos, así que se comprueba aparte.
+comprobar(fmtEuro(5199.98) === '5.199,98 €', `fmtEuro(5199.98) → "${fmtEuro(5199.98)}"`);
+comprobar(fmtEuro(1000) === '1.000,00 €', `fmtEuro(1000) → "${fmtEuro(1000)}"`);
+comprobar(fmtEuro(999.98) === '999,98 €', `fmtEuro(999.98) → "${fmtEuro(999.98)}" (sin miles: son 3 cifras)`);
+comprobar(fmtEuro(-250.5) === '-250,50 €', `fmtEuro(-250.5) → "${fmtEuro(-250.5)}"`);
+
 console.log('\n━━━ B03 sobrevive al informe consolidado (recalculada sin el texto del decreto) ━━━');
 // mostrarInformeConsolidado() en app.js llama a evaluarDecreto(ficha) leyendo
 // del registro, que nunca guarda el texto íntegro (ver registry.js). Una

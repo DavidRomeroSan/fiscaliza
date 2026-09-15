@@ -35,8 +35,23 @@ export function aNumero(str) {
   return Number.isFinite(n) ? n : null;
 }
 
-export const fmtEuro = (n) =>
-  n == null ? 'No consta' : n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+/**
+ * Formatea a mano en vez de usar `toLocaleString('es-ES', {style:'currency'…})`:
+ * los datos CLDR actuales de "es" fijan `minimumGroupingDigits` en 2, así que
+ * el propio Intl del navegador (y de Node) deja SIN separador de miles
+ * cualquier importe de cuatro cifras — "5199,98 €" en vez de "5.199,98 €" — y
+ * eso no se puede forzar con la opción `minimumGroupingDigits` del propio
+ * Intl. Como este es precisamente el rango donde caen muchos importes de
+ * decretos municipales, un formateador propio es más fiable que confiar en
+ * el locale.
+ */
+export const fmtEuro = (n) => {
+  if (n == null) return 'No consta';
+  const signo = n < 0 ? '-' : '';
+  const [entero, decimales] = Math.abs(n).toFixed(2).split('.');
+  const conMiles = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${signo}${conMiles},${decimales} €`;
+};
 
 function buscar(texto, re, grupo = 1) {
   const m = texto.match(re);
