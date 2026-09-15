@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiscaliza — resumen y lectura de decretos municipales</title>
+<meta name="description" content="Resume decretos municipales y señala qué merece una pregunta. Todo el procesamiento ocurre en tu navegador: ningún documento sale de tu equipo.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="barra">
+  <span class="barra__marca">Fiscaliza</span>
+  <span class="barra__lema">Decretos municipales · ficha técnica y lectura de oposición</span>
+  <span class="barra__espacio"></span>
+  <span class="barra__dato" id="barraRegistro">Registro local: <strong>0</strong> decretos</span>
+</header>
+
+<main class="envoltorio">
+  <div class="rejilla">
+
+    <section>
+      <div class="soltar" id="zonaSoltar" tabindex="0" role="button"
+            aria-label="Seleccionar decretos para analizar">
+        <p class="soltar__titulo">Suelta aquí los decretos</p>
+        <p class="soltar__pie">PDF · DOCX · TXT — nada sale de este equipo</p>
+        <input type="file" id="entradaArchivos" multiple accept=".pdf,.docx,.txt" class="oculto-visual">
+      </div>
+
+      <div class="estado" id="estado" hidden></div>
+
+      <div class="vacio" id="vacio">
+        Todavía no has analizado nada. Sube uno o varios decretos: cada uno aparece aquí con su
+        ficha técnica, y cuando quieras verlo todo junto, pulsa «Informe consolidado» en el
+        panel de la derecha para un único documento con todos los hallazgos, cada uno con su
+        número de decreto.
+      </div>
+
+      <div class="lista" id="lista"></div>
+    </section>
+
+    <aside class="lateral">
+
+      <div class="bloque">
+        <h2 class="bloque__titulo">Registro acumulado</h2>
+        <div id="panelRegistro">
+          <p class="nota-privacidad">Sin decretos guardados todavía.</p>
+        </div>
+        <div class="acciones">
+          <button class="boton boton--pleno boton--principal" id="btnPatrones">Informe consolidado</button>
+          <button class="boton" id="btnExportarRegistro">Copia de seguridad</button>
+          <button class="boton" id="btnImportarRegistro">Restaurar</button>
+          <button class="boton boton--peligro" id="btnBorrarRegistro">Borrar registro</button>
+          <input type="file" id="entradaRegistro" accept=".json" class="oculto-visual">
+        </div>
+      </div>
+
+      <div class="bloque">
+        <h2 class="bloque__titulo">Dónde están tus datos</h2>
+        <p class="nota-privacidad">
+          <strong>En tu navegador y en ningún otro sitio.</strong> Los PDF se leen en memoria,
+          se analizan y se descartan. No hay servidor, no hay cuenta, no hay copia remota.
+        </p>
+        <p class="nota-privacidad">
+          El registro acumulado guarda solo datos estructurados —importes, expedientes,
+          proveedores, motivos de reparo—, nunca el texto íntegro ni nombres de particulares.
+        </p>
+        <p class="nota-privacidad">
+          El filtro de datos personales <strong>reduce el riesgo, no lo elimina</strong>.
+          Revisa siempre el resultado antes de compartirlo.
+        </p>
+      </div>
+
+    </aside>
+  </div>
+</main>
+
+<footer class="pie">
+  Fiscaliza · herramienta de trabajo interno · el análisis se ejecuta íntegramente en el navegador<br>
+  Las alertas no son conclusiones ni acusaciones: son puntos que merecen una pregunta.
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
