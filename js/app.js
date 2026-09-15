@@ -511,6 +511,74 @@ async function mostrarInformeConsolidado() {
   ocultarEstado();
 }
 
+/* ─────────────── resumen completo de un lote (Word, uso interno) ─────────────── */
+
+let archivosLote = null;
+
+function mostrarEstadoLote(texto, tipo = 'trabajando') {
+  const el = $('#estadoLote');
+  el.textContent = texto;
+  el.className = `estado estado--${tipo}`;
+  el.hidden = false;
+}
+const ocultarEstadoLote = () => { $('#estadoLote').hidden = true; };
+
+/**
+ * Procesa un lote completo para el resumen en Word — un flujo aparte de
+ * procesar(), efímero: NO guarda nada en el registro acumulado (registry.js).
+ * Es deliberado: con la casilla "sin anonimizar" marcada se generarían
+ * fichas con datos personales reales, y esos no deben mezclarse nunca con el
+ * registro persistente que alimenta el informe consolidado.
+ */
+async function generarResumenLote(archivos, sinAnonimizar, boton) {
+  const lista = [...archivos].filter(f => /\.(pdf|docx|txt)$/i.test(f.name));
+  if (!lista.length) {
+    mostrarEstadoLote('Ninguno de esos archivos es un PDF, DOCX o TXT.', 'error');
+    return;
+  }
+
+  const original = boton.textContent;
+  boton.disabled = true;
+  try {
+    const elementos = [];
+    for (let i = 0; i < lista.length; i++) {
+      const archivo = lista[i];
+      boton.textContent = `Analizando ${i + 1}/${lista.length}…`;
+      mostrarEstadoLote(`Analizando ${i + 1} de ${lista.length} — ${archivo.name}`);
+      try {
+        const { texto, escaneado } = await extraerTexto(archivo);
+        if (escaneado || texto.length < 200) {
+          throw new Error('PDF sin texto legible (posible escaneo)');
+        }
+        const proveedores = terceros(extraerLineas(texto));
+        const anon = anonimizar(texto, { permitir: proveedores });
+        const ficha = analizar(sinAnonimizar ? texto : anon.textoAnonimo, archivo.name);
+        elementos.push({ archivo: archivo.name, ficha });
+      } catch (err) {
+        elementos.push({ archivo: archivo.name, error: err.message });
+      }
+    }
+
+    boton.textContent = 'Generando Word…';
+    mostrarEstadoLote('Generando el documento Word…');
+    const { resumenFichasDocxBlob } = await cargarExportDocx();
+    const blob = await resumenFichasDocxBlob(elementos, { anonimo: !sinAnonimizar });
+    const fecha = new Date().toISOString().slice(0, 10);
+    descargar(`resumen_decretos_${fecha}${sinAnonimizar ? '_sin_anonimizar' : ''}.docx`, blob,
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+    const conFicha = elementos.filter(e => e.ficha).length;
+    mostrarEstadoLote(
+      `Listo: ${elementos.length} archivo(s) recibido(s), ${conFicha} con ficha, ${elementos.length - conFicha} sin leer.`);
+    setTimeout(ocultarEstadoLote, 8000);
+  } catch (err) {
+    mostrarEstadoLote('No se ha podido generar el resumen: ' + err.message, 'error');
+  } finally {
+    boton.disabled = false;
+    boton.textContent = original;
+  }
+}
+
 /* ─────────────── enlaces de la interfaz ─────────────── */
 
 function iniciar() {
@@ -575,6 +643,23 @@ function iniciar() {
 
   refrescarRegistro().catch(() => {
     mostrarEstado('No se ha podido abrir el registro local. Si estás en modo incógnito, el historial no se guardará.', 'error');
+  });
+
+  const entradaLote = $('#entradaLote');
+  const btnSeleccionarLote = $('#btnSeleccionarLote');
+  const btnResumenLote = $('#btnResumenLote');
+
+  btnSeleccionarLote.addEventListener('click', () => entradaLote.click());
+  entradaLote.addEventListener('change', () => {
+    archivosLote = entradaLote.files.length ? entradaLote.files : null;
+    btnResumenLote.disabled = !archivosLote;
+    btnSeleccionarLote.textContent = archivosLote
+      ? `${archivosLote.length} archivo(s) seleccionados — cambiar`
+      : 'Seleccionar archivos del lote';
+  });
+  btnResumenLote.addEventListener('click', () => {
+    if (!archivosLote) return;
+    generarResumenLote(archivosLote, $('#chkSinAnonimizar').checked, btnResumenLote);
   });
 }
 

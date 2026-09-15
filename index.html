@@ -57,6 +57,25 @@
       </div>
 
       <div class="bloque">
+        <h2 class="bloque__titulo">Resumen completo de un lote</h2>
+        <p class="nota-privacidad">
+          Sube todos los decretos de una tanda (por ejemplo, los de una sesión) y genera un único
+          Word con la ficha técnica de cada archivo, uno detrás de otro — para comprobar la
+          extracción a escala antes de repartir nada.
+        </p>
+        <label class="opcion-casilla">
+          <input type="checkbox" id="chkSinAnonimizar">
+          Mostrar nombres y DNI de particulares (documento interno — no lo compartas fuera del grupo)
+        </label>
+        <div class="acciones">
+          <button class="boton" id="btnSeleccionarLote">Seleccionar archivos del lote</button>
+          <input type="file" id="entradaLote" multiple accept=".pdf,.docx,.txt" class="oculto-visual">
+          <button class="boton boton--principal" id="btnResumenLote" disabled>Generar resumen (Word)</button>
+        </div>
+        <div class="estado" id="estadoLote" hidden></div>
+      </div>
+
+      <div class="bloque">
         <h2 class="bloque__titulo">Dónde están tus datos</h2>
         <p class="nota-privacidad">
           <strong>En tu navegador y en ningún otro sitio.</strong> Los PDF se leen en memoria,
@@ -74,6 +93,10 @@
         <p class="nota-privacidad">
           El filtro de datos personales <strong>reduce el riesgo, no lo elimina</strong>.
           Revisa siempre el resultado antes de compartirlo.
+        </p>
+        <p class="nota-privacidad">
+          El «Resumen completo de un lote» con la casilla marcada es la única excepción: genera
+          un documento SIN anonimizar, pensado solo para circular dentro del grupo municipal.
         </p>
       </div>
 

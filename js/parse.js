@@ -62,12 +62,57 @@ function buscar(texto, re, grupo = 1) {
 /* ────────────────────────── fecha y mandato ────────────────────────── */
 
 /**
+ * Número y fecha reales del decreto, leídos del pie que esPublico Gestiona
+ * repite en cada página ("DECRETO" / "Número: 2026-1651" / "Fecha:
+ * 28/08/2026", en el margen).
+ *
+ * Ese pie es texto rotado 90°, y extraerTexto() (ver extract.js) reconstruye
+ * líneas agrupando por posición vertical: un giro de 90° hace que sus
+ * fragmentos caigan en las mismas filas que líneas de cuerpo con las que no
+ * tienen relación. Comprobado contra decretos reales de 2026, "DECRETO",
+ * "Número:" y "Fecha:" NO salen garantizados contiguos ni en ese orden — así
+ * que buscarlos como una sola frase seguida no funciona. Lo que sí es
+ * estable: la mención "Fecha: DD/MM/YYYY" más cercana (antes o después, por
+ * distancia de caracteres) al primer "Número: XXXX-NNNN" del texto es la
+ * fecha real de ESE decreto — nunca la fecha de una solicitud o de un informe
+ * citados en el cuerpo, que quedan mucho más lejos (miles de caracteres, no
+ * cientos, en los decretos reales contra los que se ha comprobado esto).
+ */
+function datosDelPieDecreto(texto) {
+  const numMatch = texto.match(/\bN[uú]mero:\s*(\d{4}[-\/]\d{3,5})/i);
+  if (!numMatch) return { decreto: null, fecha: null };
+
+  let mejor = null, mejorDist = Infinity;
+  for (const f of texto.matchAll(/\bFecha:\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/gi)) {
+    const d = Math.abs(f.index - numMatch.index);
+    if (d < mejorDist) { mejor = f; mejorDist = d; }
+  }
+  // Comprobado contra decretos reales: la pareja correcta de "Número:" y
+  // "Fecha:" del mismo pie cae hasta a ~600 caracteres de distancia (según
+  // cómo reparta itemsALineas() el texto rotado entre líneas de cuerpo), pero
+  // cualquier otra fecha del cuerpo (solicitud, informe...) queda a miles de
+  // caracteres — hay un salto claro entre ambos casos. 1000 dejaría margen de
+  // sobra sin cruzar a la zona de las fechas que no son del pie.
+  const fecha = mejor && mejorDist < 1000 ? iso(mejor[3], mejor[2], mejor[1]) : null;
+  return { decreto: numMatch[1], fecha };
+}
+
+/**
  * Los decretos de Santa Fe suelen decir "a fecha de firma electrónica" y no
  * llevan fecha en el cuerpo. La fecha fiable viene de la sesión de la Junta de
  * Gobierno Local, de la propuesta de resolución o del propio ejercicio del
  * expediente. En ese orden de preferencia.
  */
 export function extraerFecha(texto) {
+  // Se comprueba ANTES que cualquier fecha citada en el cuerpo: validado
+  // contra decretos reales de 2026, el patrón genérico de fecha suelta puede
+  // coincidir con la fecha de una delegación de Alcaldía citada en el
+  // encabezamiento ("Resolución de Alcaldía n.º 2023-1200 de 22 de junio de
+  // 2023..."), que no es la fecha de ESTE decreto, sino de la delegación que
+  // le da competencia al firmante.
+  const delPie = datosDelPieDecreto(texto);
+  if (delPie.fecha) return { iso: delPie.fecha, origen: 'Fecha del propio decreto (pie de página)' };
+
   // El reparo cita siempre informes de Secretaría de 2015 y 2018. Si no se
   // excluyen, el decreto acaba fechado una década antes de existir.
   const limpio = texto.replace(
@@ -131,7 +176,12 @@ export function extraerFirmante(texto) {
     /(?:DON|DOÑA|D\.|D[ªº]\.?)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?),?\s*(?:COMO\s+)?(?:ALCALDE|ALCALDESA)/,
     // "La Alcaldesa Presidenta Dª. Patricia Carrasco Flores"
     /L[AO]S?\s+ALCALDES?A?\s+PRESIDENT[AE]\s*(?:D[ªº]\.?|D\.)?\s*([A-ZÁÉÍÓÚÑa-záéíóúñ\s.]{6,60})/i,
-    /EL ALCALDE[- ]?(?:PRESIDENTE)?\s*Fdo\.?:?\s*(?:D\.)?\s*([A-ZÁÉÍÓÚÑa-záéíóúñ\s.]{6,60})/i,
+    // "EL ALCALDE- PRESIDENTE." (decreto real 2026-1528, ayuda social) tiene
+    // GUION Y ESPACIO entre ambas palabras, y un punto antes de "Fdo.": el
+    // "[- ]?" original solo admitía UNO de esos dos caracteres separadores
+    // (no los dos a la vez), así que el patrón no llegaba a "Fdo." y el
+    // decreto se quedaba sin firmante.
+    /EL ALCALDE[-\s]*(?:PRESIDENTE)?\.?\s*Fdo\.?:?\s*(?:D\.)?\s*([A-ZÁÉÍÓÚÑa-záéíóúñ\s.]{6,60})/i,
     /LA ALCALDESA\s*Fdo\.?:?\s*(?:D[ªº]\.)?\s*([A-ZÁÉÍÓÚÑa-záéíóúñ\s.]{6,60})/i,
   ];
   for (const re of patrones) {
@@ -275,8 +325,39 @@ const TIPOS = [
   {
     id: 'multa',
     nombre: 'Sanción o multa',
-    test: (t) => /(expediente sancionador|imponer.{0,20}sanci[óo]n|procedimiento sancionador)/i.test(t),
+    // Validado contra decretos reales de licencias de 2026: la cláusula de
+    // estilo "se levantará acta de denuncia a los efectos de imponer las
+    // sanciones que correspondiesen" aparece en CASI TODAS las licencias y
+    // autorizaciones (advierte de lo que podría pasar si se incumplen las
+    // condiciones), y con "imponer.{0,20}sanción" a secas bastaba para que
+    // el motor etiquetara la licencia entera como si fuera ella misma una
+    // sanción. Ahora se exige un acto sancionador real: un expediente
+    // sancionador con número concreto, o una resolución que impone la
+    // sanción, no una advertencia genérica sobre sanciones futuras.
+    test: (t) => /expediente sancionador\s*n[ºo°.]{0,3}\s*\d|procedimiento sancionador\s*n[ºo°.]{0,3}\s*\d|\bSE\s+(?:ACUERDA|RESUELVE|IMPONE)\b[^.]{0,60}\bsanci[óo]n/i.test(t),
     peso: 50,
+  },
+  {
+    id: 'licencia_actividad',
+    nombre: 'Licencia de actividad o autorización urbanística',
+    // Es, con diferencia, el tipo más repetido del lote de 2026 (casetas,
+    // atracciones y puestos de feria): sin esta categoría, más de 100 de
+    // 135 decretos caían en "General / no clasificado" solo por no tener
+    // clasificador propio, no porque el motor no supiera de qué trataban.
+    test: (t) => /procedimiento:\s*licencia (?:de actividades y espect[áa]culos p[úu]blicos|o autorizaci[óo]n urban[íi]stica)/i.test(t),
+    peso: 55,
+  },
+  {
+    // El índice del libro de decretos (documento que se sube junto al lote,
+    // con la relación de todos los decretos incluidos) no es un decreto:
+    // clasificarlo como tal producía número de decreto, fecha y objeto
+    // inventados a partir del primer decreto listado dentro del propio
+    // índice. Peso máximo: si aparece este patrón, ningún otro clasificador
+    // debe competir.
+    id: 'indice',
+    nombre: 'Índice del libro de decretos (no es un decreto individual)',
+    test: (t) => /[ÍI]NDICE DE DOCUMENTOS/i.test(t) && /Libro:?\s*Libro de Decretos/i.test(t),
+    peso: 999,
   },
   {
     id: 'solicitud_info',
@@ -355,6 +436,12 @@ export function extraerExpediente(texto) {
 
 export function extraerNumeroDecreto(texto, nombreArchivo = '') {
   return (
+    // Mismo pie de página que extraerFecha() (ver datosDelPieDecreto). Es la
+    // fuente más fiable — se comprueba antes que el patrón genérico de
+    // "decreto/resolución nº X", que puede casar con una delegación de
+    // Alcaldía citada en el cuerpo en vez de con el número del propio
+    // decreto.
+    datosDelPieDecreto(texto).decreto ||
     buscar(texto, /(?:decreto|resoluci[óo]n)\s*(?:de alcald[íi]a)?\s*n?[.ºo°]*\s*:?\s*(\d{4}[-\/]\d{3,5})/i) ||
     buscar(texto, /\bPR\/(\d{4}\/\d+)/i) ||
     buscar(nombreArchivo, /(\d{4}[-_]\d{3,5})/) ||
@@ -482,16 +569,59 @@ export function extraerProveedores(texto) {
 
 /** Objeto del decreto: el asunto declarado, o la primera frase con contenido. */
 export function extraerObjeto(texto) {
-  const asunto = buscar(texto, /\bAsunto\s*:?\s*([^\n]{10,200})/i);
+  // "Asunto del Expediente:" es una variante real (decretos de licencias y
+  // autorizaciones): con el colon opcional del patrón anterior, "Asunto" ya
+  // casaba sin haber llegado al colon real, y la captura se quedaba con
+  // "del Expediente: Puesta en funcionamiento..." en vez del contenido.
+  const asunto = buscar(texto, /\bAsunto(?:\s+del\s+Expediente)?\s*:\s*([^\n]{10,200})/i);
   if (asunto) return asunto.replace(/\s*Procedimiento\s*:.*$/i, '').trim();
 
   const concepto = buscar(texto, /en concepto de\s+[“"]?([^”"\n.]{10,200})/i);
   if (concepto) return concepto.trim();
 
-  const propuesta = buscar(texto, /PROPUESTA\s*:?\s*([^\n]{10,220})/i);
+  // Exige el colon: sin él, la palabra "propuesta" suelta en medio de una
+  // frase de cuerpo ("el Informe-Propuesta emitido por el Equipo de SSC, la
+  // Propuesta de Gasto de la Sr. Concejal...", en un decreto real de ayuda
+  // social sin campo "Asunto") se colaba entera como si fuera el objeto.
+  const propuesta = buscar(texto, /PROPUESTA\s*:\s*([^\n]{10,220})/i);
   if (propuesta) return propuesta.trim();
 
+  // "APROBAR una Ayuda de..." / "APROBAR el pago a...": el verbo resolutivo
+  // de los decretos de ayudas y pagos a justificar, que no llevan "Asunto:"
+  // ni "PROPUESTA:" propios — sin este fallback, la ficha se quedaba con el
+  // objeto vacío pese a que la frase que de verdad importa está ahí.
+  // Sin excluir el punto: "a favor de D./Dª ELENA..." tiene el punto de la
+  // abreviatura "D." a los pocos caracteres, y con [^\n.] la captura se
+  // cortaba ahí ("Aprobar una Ayuda..., a favor de D.") en vez de coger la
+  // frase completa. El límite de longitud ya evita que se cuele el párrafo
+  // entero. Y se busca sobre el texto con saltos de línea colapsados a
+  // espacios: en el PDF real (2026-1528) la frase se parte justo después de
+  // "a favor de" por el propio ajuste de línea del documento — no es un
+  // punto y aparte — y sin colapsarlo la captura se quedaba ahí cortada.
+  const aprobar = buscar(texto.replace(/\s+/g, ' '), /\bAPROBAR\s+([^\n]{10,200})/i);
+  if (aprobar) return `Aprobar ${aprobar.trim()}`;
+
   return null;
+}
+
+/**
+ * Persona física a favor de quien se reconoce un gasto: ayudas sociales,
+ * pagos a justificar, pensiones... — el dato que de verdad importa en estos
+ * decretos y que ningún otro campo de la ficha recogía (el objeto suele ser
+ * solo el título genérico del programa, "PAGOS AGOSTO 2026" o similar).
+ *
+ * Solo casa con nombres precedidos de tratamiento (D./Dña./Don/Doña): así se
+ * excluyen los "a favor de" que en este corpus son siempre una entidad
+ * (NOMINAS, Tesorería General..., una S.L., la Junta de Gobierno) y que ya
+ * cubre extraerProveedores(). Si el texto está anonimizado, captura el
+ * marcador ([PERSONA_1]) tal cual: sigue identificando que HAY un
+ * beneficiario, aunque el nombre esté sustituido.
+ */
+export function extraerBeneficiario(texto) {
+  const m = texto.match(
+    /(?:a favor de|para el pago a)\s+(?:D\.?\s*\/\s*D[ªº]\.?|D[ªº]\.?|DON|DO[ÑN]A|D\.)\s*([A-ZÁÉÍÓÚÑ\[][^,.\n(]{2,80}?)(?=\s*(?:,|\.|\(|\bcon\s+(?:DNI|NIF)|\n|$))/i
+  );
+  return m ? m[1].replace(/\s+/g, ' ').trim() : null;
 }
 
 /* ────────────────────────── el reparo, en detalle ────────────────────────── */
@@ -604,6 +734,34 @@ export function extraerSentencias(texto) {
 export function analizar(texto, nombreArchivo = '') {
   const lineas = extraerLineas(texto);
   const clasificacion = clasificar(texto, lineas.filter(l => l.tipo === 'proveedor').length);
+
+  // El índice no tiene número, fecha ni firmante propios que extraer: son
+  // del lote, no de un decreto. Se corta aquí para no dejar que los patrones
+  // genéricos cojan por error el primer decreto listado dentro del índice.
+  if (clasificacion.tipo === 'indice') {
+    return {
+      lineas: [], porTercero: [], mayores: [], nFacturas: 0, sumaLineas: 0, cuadra: null,
+      archivo: nombreArchivo,
+      ...clasificacion,
+      decreto: null,
+      expediente: null,
+      objeto: 'Índice del libro de decretos: no es un decreto individual, es el listado de la remesa recibida.',
+      beneficiario: null,
+      fecha: null,
+      fechaOrigen: null,
+      firmante: null,
+      mandato: { id: null, etiqueta: 'No aplica (no es un decreto)', partido: null, alcaldia: null, confianza: 'nula', nota: null },
+      importeTotal: null,
+      importes: [],
+      aplicaciones: [],
+      proveedores: [],
+      reparo: { hayReparo: false, motivos: [] },
+      sentencias: [],
+      prorroga: { prorrogado: false },
+      vinculacionJuridica: false,
+    };
+  }
+
   const fecha = extraerFecha(texto);
   const firmante = extraerFirmante(texto);
   let mandato = atribuirMandato(fecha.iso, firmante, esConcejalDelegado(texto));
@@ -642,6 +800,7 @@ export function analizar(texto, nombreArchivo = '') {
     decreto: extraerNumeroDecreto(texto, nombreArchivo),
     expediente: extraerExpediente(texto),
     objeto: extraerObjeto(texto),
+    beneficiario: extraerBeneficiario(texto),
     fecha: fecha.iso,
     fechaOrigen: fecha.origen,
     firmante,
@@ -680,6 +839,7 @@ export function analizar(texto, nombreArchivo = '') {
 
 /** Campos que no se han podido extraer, para declararlos expresamente en la ficha. */
 export function datosNoIncluidos(ficha) {
+  if (ficha.tipo === 'indice') return [];
   const faltan = [];
   if (!ficha.decreto) faltan.push('No consta número de decreto.');
   if (!ficha.expediente) faltan.push('No consta número de expediente.');

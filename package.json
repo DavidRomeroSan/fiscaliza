@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "docx": "^8.5.0",
     "pdfjs-dist": "4.0.379"
   }
 }

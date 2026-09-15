@@ -7,6 +7,12 @@
  * de golpe para no tener que abrir N documentos para ver qué hay que mirar.
  * Todo insight lleva siempre el número de decreto (o expediente) por delante,
  * precisamente para poder volver a uno concreto sin tener que releerlos todos.
+ *
+ * Tercera salida, para validar la extracción a escala: resumenFichasMarkdown()
+ * junta las fichas técnicas de todos los archivos subidos en un único
+ * documento, sin criterio editorial (eso es informeConsolidadoMarkdown) y con
+ * cobertura por ARCHIVO — no por número de decreto, que no siempre es
+ * correlativo.
  */
 
 import { fmtEuro, datosNoIncluidos } from './parse.js';
@@ -17,8 +23,15 @@ const refDecreto = (ficha) => ficha.decreto || ficha.expediente || ficha.archivo
 /* ─────────── ficha técnica (neutra, por decreto) ─────────── */
 
 export function fichaMarkdown(ficha, opciones = {}) {
-  const { anonimo = true } = opciones;
+  const { anonimo = true, mostrarMandato = true } = opciones;
   const L = [];
+
+  if (ficha.tipo === 'indice') {
+    L.push('# Índice del libro de decretos');
+    L.push('');
+    L.push('*No es un decreto individual: es el listado de la remesa recibida.*');
+    return L.join('\n');
+  }
 
   L.push(`# Decreto ${ficha.decreto || 's/n'}`);
   L.push('');
@@ -27,9 +40,12 @@ export function fichaMarkdown(ficha, opciones = {}) {
   L.push(`**Expediente:** ${ficha.expediente || 'No consta'}  `);
   L.push(`**Tipo:** ${ficha.tipoNombre}  `);
   L.push(`**Objeto:** ${ficha.objeto || 'No consta'}  `);
+  if (ficha.beneficiario) L.push(`**Beneficiario:** ${ficha.beneficiario}  `);
   L.push(`**Fecha:** ${ficha.fecha || 'No consta'}${ficha.fechaOrigen ? ` _(${ficha.fechaOrigen})_` : ''}  `);
   L.push(`**Firmante:** ${ficha.firmante || 'No consta'}  `);
-  L.push(`**Mandato:** ${ficha.mandato?.etiqueta || 'Sin determinar'}${ficha.mandato?.confianza && ficha.mandato.confianza !== 'alta' ? ` _(atribución: ${ficha.mandato.confianza})_` : ''}  `);
+  if (mostrarMandato) {
+    L.push(`**Mandato:** ${ficha.mandato?.etiqueta || 'Sin determinar'}${ficha.mandato?.confianza && ficha.mandato.confianza !== 'alta' ? ` _(atribución: ${ficha.mandato.confianza})_` : ''}  `);
+  }
   L.push(`**Importe:** ${fmtEuro(ficha.importeTotal)}`);
   L.push('');
 
@@ -110,7 +126,61 @@ export function fichaMarkdown(ficha, opciones = {}) {
 
   L.push('---');
   L.push(`*Generado el ${new Date().toLocaleDateString('es-ES')}. Documento de trabajo interno.*`);
-  if (anonimo) L.push('*Los datos personales de particulares han sido sustituidos por marcadores. Revísalo antes de compartir.*');
+  L.push(anonimo
+    ? '*Los datos personales de particulares han sido sustituidos por marcadores. Revísalo antes de compartir.*'
+    : '*Contiene datos personales SIN anonimizar (nombres, DNI de particulares). No lo compartas fuera del grupo municipal.*');
+
+  return L.join('\n');
+}
+
+/* ─────────── resumen de todos los archivos (hechos, sin criterio editorial) ─────────── */
+
+/**
+ * La ficha técnica de cada archivo subido, una detrás de otra, en un único
+ * documento — sin pregunta, réplica ni propuesta: eso es criterio editorial
+ * y va en el informe consolidado, no aquí. Pensado para comprobar la
+ * extracción a escala: la cobertura se cuenta por ARCHIVO subido, no por
+ * número de decreto (que no siempre es correlativo y no sirve para saber si
+ * falta alguno). Si se suben 135 archivos, aparecen 135 entradas — con lo
+ * que se ha podido extraer, o con el motivo por el que no.
+ *
+ * `elementos`: array de `{ archivo, ficha }` (procesado con éxito) o
+ * `{ archivo, error }` (no se pudo leer), EN EL ORDEN en que se subieron.
+ *
+ * `opciones` se reenvía a fichaMarkdown() en cada entrada: `mostrarMandato`
+ * (por defecto false aquí — un lote de validación suele ser de un único
+ * mandato, y repetirlo 135 veces no aporta nada) y `anonimo` (por defecto
+ * true; en false, el texto de origen no se ha anonimizado y así se advierte
+ * en el pie de cada ficha).
+ */
+export function resumenFichasMarkdown(elementos, opciones = {}) {
+  const { mostrarMandato = false, anonimo = true } = opciones;
+  const L = [];
+  L.push('# Resumen de decretos — hechos objetivos');
+  L.push('');
+  L.push('*Ficha técnica de cada archivo recibido, sin interpretación. El análisis es posterior y humano.*');
+  L.push('');
+
+  const noLeidos = elementos.filter(e => !e.ficha);
+  L.push(`Archivos recibidos: ${elementos.length} · Analizados: ${elementos.length - noLeidos.length} · No se pudieron leer: ${noLeidos.length}`);
+  L.push('');
+
+  if (noLeidos.length) {
+    L.push('## Archivos que no se han podido leer');
+    L.push('');
+    for (const e of noLeidos) L.push(`- **${e.archivo}** — ${e.error}`);
+    L.push('');
+  }
+
+  for (const e of elementos) {
+    if (!e.ficha) continue;
+    L.push(`**Archivo:** \`${e.archivo}\``);
+    L.push('');
+    L.push(fichaMarkdown(e.ficha, { mostrarMandato, anonimo }));
+    L.push('');
+    L.push('---');
+    L.push('');
+  }
 
   return L.join('\n');
 }

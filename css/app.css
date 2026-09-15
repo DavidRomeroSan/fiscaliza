@@ -400,6 +400,17 @@ body {
 .nota-privacidad + .nota-privacidad { margin-top: 9px; }
 .nota-privacidad strong { color: var(--tinta); }
 
+.opcion-casilla {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--tinta-suave, #555);
+  cursor: pointer;
+}
+.opcion-casilla input { margin-top: 2px; }
+
 /* ─────────────── botones ─────────────── */
 
 .acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
