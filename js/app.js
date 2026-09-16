@@ -76,9 +76,13 @@ async function generarResumen(archivos, sinAnonimizar, boton) {
     boton.textContent = 'Generando Word…';
     mostrarEstado('Generando el documento Word…');
     const { resumenFichasDocxBlob } = await cargarExportDocx();
-    const blob = await resumenFichasDocxBlob(elementos, { anonimo: !sinAnonimizar });
     const fecha = new Date().toISOString().slice(0, 10);
-    descargar(`resumen_decretos_${fecha}${sinAnonimizar ? '_sin_anonimizar' : ''}.docx`, blob,
+    // Mismo texto para el nombre del archivo y para el título del propio
+    // documento (encabezado y metadatos de Word) — pedido explícitamente
+    // para que uno y otro coincidan siempre.
+    const titulo = `Resumen_decretos_${fecha}`;
+    const blob = await resumenFichasDocxBlob(elementos, { anonimo: !sinAnonimizar, titulo });
+    descargar(`${titulo}.docx`, blob,
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
     const conFicha = elementos.filter(e => e.ficha).length;
