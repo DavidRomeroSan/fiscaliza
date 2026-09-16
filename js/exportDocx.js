@@ -240,10 +240,14 @@ export async function resumenFichasDocxBlob(elementos, opciones = {}) {
   // no aporta nada, así que aquí se omite por defecto (a diferencia de
   // fichaDocxBlob, donde si tiene sentido para una ficha suelta).
   const opts = { mostrarMandato: false, ...opciones };
+  // `titulo` es el mismo texto que usa app.js para el nombre del archivo
+  // descargado (sin la extensión): el encabezado del documento y los
+  // metadatos de Word llevan siempre el mismo título que el propio archivo.
+  const titulo = opts.titulo || 'Resumen de decretos — hechos objetivos';
   const docx = await cargarDocx();
   const hijos = [];
 
-  hijos.push(h1(docx, 'Resumen de decretos — hechos objetivos'));
+  hijos.push(h1(docx, titulo));
   hijos.push(italica(docx, 'Ficha técnica de cada archivo recibido, sin interpretación. El análisis es posterior y humano.'));
 
   const noLeidos = elementos.filter(e => !e.ficha);
@@ -263,7 +267,7 @@ export async function resumenFichasDocxBlob(elementos, opciones = {}) {
 
   hijos.push(avisoCierre(docx, opts));
 
-  const doc = new docx.Document({ sections: [{ children: hijos }] });
+  const doc = new docx.Document({ title: titulo, sections: [{ children: hijos }] });
   return docx.Packer.toBlob(doc);
 }
 
