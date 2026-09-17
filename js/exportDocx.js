@@ -122,6 +122,13 @@ function fichaDocxChildren(docx, ficha, opciones = {}) {
     ficha.ordenDelDia.forEach((punto) => hijos.push(vineta(docx, punto)));
   }
 
+  // No junto a una relación de facturas: ahí lo que importa es la relación
+  // en sí (quién cobra, cuánto), no el trámite genérico de "ordenar el pago".
+  if (ficha.resolucion && !ficha.nFacturas) hijos.push(campo(docx, 'Resolución', ficha.resolucion));
+  if (ficha.totalExpedientesSancionadores != null) {
+    hijos.push(campo(docx, 'Total de expedientes sancionadores', ficha.totalExpedientesSancionadores));
+  }
+
   if (ficha.aplicaciones?.length) {
     hijos.push(campo(docx, 'Aplicaciones presupuestarias', ficha.aplicaciones.join(', ')));
   }
@@ -160,7 +167,10 @@ function fichaDocxChildren(docx, ficha, opciones = {}) {
           (l.aplicacion ? ` (${l.aplicacion})` : '')));
       }
     }
-  } else if (ficha.proveedores?.length) {
+  } else if (ficha.proveedores?.length && ficha.totalExpedientesSancionadores == null) {
+    // En un decreto de sanciones de tráfico masivo, el propio texto de la
+    // tabla de infracciones (matrículas, códigos de norma...) cuela
+    // coincidencias falsas de "S.L./S.A." que no son proveedores reales.
     hijos.push(h2(docx, 'Terceros identificados'));
     for (const p of ficha.proveedores) {
       hijos.push(vineta(docx, `${p.nombre}${p.cif ? ` (${p.cif})` : ''}`));

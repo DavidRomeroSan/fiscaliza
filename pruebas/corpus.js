@@ -719,6 +719,92 @@ DECRETO`
 },
 
 {
+  id: 'exencion-ibi-desestimada-2026-1697',
+  // Extracto real del decreto 2026-1697. Trampa real: el bloque "HECHOS Y
+  // FUNDAMENTOS DE DERECHO" tiene SU PROPIA numeración PRIMERO/SEGUNDO
+  // (argumentando por qué no procede la exención), sin ningún "RESOLUCIÓN"
+  // ni "DISPONGO" delante — así que extraerResolucion() no puede anclarse a
+  // "el primer PRIMERO", tiene que ser al último encabezado "RESOLUCIÓN".
+  esperado: { tipo: 'general', expediente: '5176/2026' },
+  texto: `RESOLUCIÓN
+Expediente nº: 5176/2026
+Asunto del Expediente: EXENCIÓN IBI CONJUNTO HISTÓRICO FERNANDO ARIZA DÍAZ
+
+DON RUBEN MARTINEZ BERMUDEZ, CONCEJAL DELEGADO DE HACIENDA Y GESTION ECONOMICA, en virtud de Resolución de Alcaldía n.º 2023-1200 de 22 de junio de 2023, vengo a dictar la siguiente
+
+HECHOS Y FUNDAMENTOS DE DERECHO
+
+PRIMERO. En la Ordenanza fiscal reguladora del Impuesto sobre Bienes Inmuebles, aprobada por este Ayuntamiento, recoge en el artículo 3, que estarán exentos los inmuebles declarados monumento o jardín histórico.
+
+SEGUNDO. NO consta que el inmueble se incluya "Catálogo Urbanístico de Bienes y Espacios Protegidos" del Conjunto Histórico de Santa Fe.
+
+A la vista de todo ello, se informa QUE NO PROCEDE la exención prevista.
+
+RESOLUCIÓN
+
+PRIMERO. Desestimar la solicitud al no cumplir los requisitos recogidos en la Ordenanza fiscal
+reguladora.
+SEGUNDO. Notificar el presente Decreto al interesado.
+
+ºEn Santa Fe, a fecha de firma electrónica.
+EL CONCEJAL DELEGADO.
+Fdo.: D. Rubén Martínez Bermúdez.`
+},
+
+{
+  id: 'periodicidad-jgl-disponsgo-2026-1694',
+  // Extracto real del decreto 2026-1694: usa "DISPONGO" como encabezado del
+  // punto resolutivo, no "RESOLUCIÓN" — hay que reconocer ambos.
+  esperado: { expediente: '3782/2023' },
+  texto: `Expediente: 3782/2023
+Asunto: Modificación de la periodicidad de las sesiones de la Junta de Gobierno Local
+
+DON JUAN COBO ORTIZ, ALCALDE-PRESIDENTE DEL EXCMO. AYUNTAMIENTO DE SANTA FE, en uso de las atribuciones que me confiere la Ley 7/1985, vengo a dictar el siguiente:
+
+DECRETO
+
+CONSIDERANDO que la Junta de Gobierno Local es un órgano colegiado necesario.
+
+En ejercicio de las atribuciones que confiere a esta Alcaldía, HE RESUELTO :
+
+DISPONGO
+
+PRIMERO.- Modificar la periodicidad de la celebración de las sesiones ordinarias de la Junta de
+Gobierno Local, fijándose los miércoles a las 9:00 h de la mañana.
+SEGUNDO .- Lo acordado en este Decreto surtirá efectos desde el día siguiente al de la fecha del mismo.
+
+En Santa Fe, a fecha de firma electrónica.
+EL ALCALDE-PRESIDENTE`
+},
+
+{
+  id: 'sanciones-trafico-masivo-2026-1695',
+  // Extracto real del decreto 2026-1695: decenas de expedientes sancionadores
+  // de tráfico en una tabla, sin ningún punto resolutivo limpio que resumir
+  // ("DISPONGO :" va seguido de prosa continua en la misma línea, no es un
+  // encabezado de sección) — lo que importa aquí es el recuento total.
+  esperado: { expediente: '4809/2026' },
+  texto: `Expte. 4809/2026.
+Procedimiento: Procedimientos Sancionadores en materia de Tráfico.
+
+DON JUAN COBO ORTIZ, ALCALDE-PRESIDENTE DEL EXCMO. AYUNTAMIENTO DE SANTA FE (GRANADA), en uso de las atribuciones que me confiere la vigente Legislación de Régimen Local,
+
+RESUELVO :
+
+Instruidos por el Servicio Provincial Tributario, los correspondientes procedimientos sobre los expedientes incoados por infracciones en materia de tráfico, abajo detallados.
+
+DISPONGO : la conclusión de los mismos y, al estimar cometidos los hechos denunciados, la imposición de las sanciones por las infracciones a la normativa de tráfico cuyos datos se detallan más abajo.
+
+Municipio: SANTA FE
+Total expedientes: 17, desde CORTES FERNANDEZ MANUEL hasta PLAKIA SYSTEMS SL:
+
+Total núm. Expedientes: 17 Total Importe principal: 8.700,00 €
+
+En Santa Fe a fecha de firma electrónica.
+EL ALCALDE-PRESIDENTE`
+},
+
+{
   id: 'indice-libro-decretos',
   // El índice del lote (se sube junto a los decretos) no es un decreto: sin
   // reconocerlo aparte, el motor le atribuía número, fecha y objeto sacados

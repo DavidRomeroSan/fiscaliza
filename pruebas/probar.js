@@ -4,6 +4,7 @@ import { extraerLineas, terceros } from '../js/lineas.js';
 import { analizar, fmtEuro } from '../js/parse.js';
 import { evaluarDecreto, evaluarPatrones, lecturaOposicion } from '../js/rules.js';
 import { limpiar } from '../js/extract.js';
+import { fichaMarkdown } from '../js/export.js';
 
 let fallos = 0;
 const comprobar = (cond, msg) => {
@@ -269,6 +270,30 @@ comprobar(
   `punto 6 no se confunde con el "21." de "PIDE-21." del punto anterior → "${jgl.ordenDelDia[5]}"`
 );
 comprobar(/^CONTRATACIÓN\. Expediente 3484\/2026/.test(jgl.ordenDelDia[7] || ''), `punto 8 (el último) → "${jgl.ordenDelDia[7]}"`);
+
+console.log('\n━━━ resolución: se ancla al último "RESOLUCIÓN", no al primer "PRIMERO" ━━━');
+const ibiDesestimada = fichas.find(f => f.archivo.startsWith('exencion-ibi-desestimada-2026-1697'));
+comprobar(
+  ibiDesestimada.resolucion === 'Desestimar la solicitud al no cumplir los requisitos recogidos en la Ordenanza fiscal reguladora.',
+  `resolución real, no el "PRIMERO" del bloque de fundamentos → "${ibiDesestimada.resolucion}"`
+);
+
+console.log('\n━━━ resolución: "DISPONGO" también cuenta como encabezado ━━━');
+const periodicidad = fichas.find(f => f.archivo.startsWith('periodicidad-jgl-disponsgo-2026-1694'));
+comprobar(
+  /^Modificar la periodicidad/.test(periodicidad.resolucion || ''),
+  `resolución bajo "DISPONGO" → "${periodicidad.resolucion}"`
+);
+
+console.log('\n━━━ sanciones de tráfico masivas: recuento en vez de un punto resolutivo ━━━');
+const sanciones = fichas.find(f => f.archivo.startsWith('sanciones-trafico-masivo-2026-1695'));
+comprobar(sanciones.totalExpedientesSancionadores === 17, `17 expedientes sancionadores → ${sanciones.totalExpedientesSancionadores}`);
+comprobar(!/Terceros identificados/.test(fichaMarkdown(sanciones)),
+  'sin "Terceros identificados" con coincidencias falsas de la tabla de infracciones (matrículas, códigos de norma)');
+comprobar(
+  sanciones.resolucion === null,
+  `sin punto resolutivo limpio que extraer ("DISPONGO :" en prosa continua, no es un encabezado) → "${sanciones.resolucion}"`
+);
 
 console.log('\n━━━ índice del libro de decretos: no es un decreto individual ━━━');
 const indice = fichas.find(f => f.archivo.startsWith('indice-libro-decretos'));

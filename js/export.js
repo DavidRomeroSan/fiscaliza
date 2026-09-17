@@ -56,6 +56,17 @@ export function fichaMarkdown(ficha, opciones = {}) {
     L.push('');
   }
 
+  // No junto a una relación de facturas: ahí lo que importa es la relación
+  // en sí (quién cobra, cuánto), no el trámite genérico de "ordenar el pago".
+  if (ficha.resolucion && !ficha.nFacturas) {
+    L.push(`**Resolución:** ${ficha.resolucion}`);
+    L.push('');
+  }
+  if (ficha.totalExpedientesSancionadores != null) {
+    L.push(`**Total de expedientes sancionadores:** ${ficha.totalExpedientesSancionadores}`);
+    L.push('');
+  }
+
   if (ficha.aplicaciones?.length) {
     L.push('**Aplicaciones presupuestarias:** ' + ficha.aplicaciones.join(', '));
     L.push('');
@@ -87,7 +98,10 @@ export function fichaMarkdown(ficha, opciones = {}) {
       }
       L.push('');
     }
-  } else if (ficha.proveedores?.length) {
+  } else if (ficha.proveedores?.length && ficha.totalExpedientesSancionadores == null) {
+    // En un decreto de sanciones de tráfico masivo, el propio texto de la
+    // tabla de infracciones (matrículas, códigos de norma...) cuela
+    // coincidencias falsas de "S.L./S.A." que no son proveedores reales.
     L.push('**Terceros identificados:**');
     for (const p of ficha.proveedores) {
       L.push(`- ${p.nombre}${p.cif ? ` (${p.cif})` : ''}`);
