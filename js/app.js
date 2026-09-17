@@ -1,20 +1,23 @@
 /**
  * app.js — Orquestación e interfaz.
  *
- * Flujo, deliberadamente en dos pasos: subir archivos, generar y descargar
- * el resumen en Word. Nada se guarda entre sesiones ni se persiste en este
- * navegador — cada vez que se genera el resumen se parte de cero.
+ * Flujo en tres pasos: subir archivos, generar una vista previa en texto que
+ * se puede corregir a mano, y descargar en Word el texto ya revisado (no las
+ * fichas originales sin tocar). Nada se guarda entre sesiones ni se persiste
+ * en este navegador — cada vez que se genera el resumen se parte de cero.
  *
  * Por archivo: extraer texto (local) → anonimizar (local, salvo que la
- * casilla diga lo contrario) → clasificar y extraer campos → volcar al Word.
- * El texto íntegro nunca se persiste: vive en memoria mientras dura la carga.
+ * casilla diga lo contrario) → clasificar y extraer campos → Markdown para
+ * la vista previa → Word a partir de ese mismo Markdown (ya editado, si hacía
+ * falta) al descargar. El texto íntegro del decreto nunca se persiste: vive
+ * en memoria mientras dura la carga.
  */
 
 import { extraerTexto } from './extract.js';
 import { anonimizar } from './redact.js';
 import { extraerLineas, terceros } from './lineas.js';
 import { analizar } from './parse.js';
-import { descargar } from './export.js';
+import { descargar, resumenFichasMarkdown } from './export.js';
 
 // La librería docx (y su descarga desde CDN) solo se carga la primera vez
 // que alguien pide de verdad el Word — nunca al abrir la aplicación.
@@ -26,6 +29,7 @@ async function cargarExportDocx() {
 
 const $ = (sel) => document.querySelector(sel);
 let archivosSeleccionados = null;
+let tituloActual = null; // mismo texto para el nombre del archivo y el título del Word
 
 function mostrarEstado(texto, tipo = 'trabajando') {
   const el = $('#estado');
@@ -36,12 +40,13 @@ function mostrarEstado(texto, tipo = 'trabajando') {
 const ocultarEstado = () => { $('#estado').hidden = true; };
 
 /**
- * Genera el resumen en Word de todos los archivos subidos. Efímero: no
- * guarda nada entre sesiones — con la casilla marcada se generan fichas con
- * datos personales reales, y no deben persistir en ningún sitio más que en
- * el documento que se descarga.
+ * Analiza todos los archivos subidos y deja el resultado en la vista previa,
+ * en texto, para poder corregirlo a mano antes de descargar — nada se
+ * descarga todavía en este paso. Efímero: no guarda nada entre sesiones, y
+ * con la casilla marcada las fichas llevan datos personales reales que no
+ * deben persistir en ningún sitio más que en el documento final.
  */
-async function generarResumen(archivos, sinAnonimizar, boton) {
+async function generarVistaPrevia(archivos, sinAnonimizar, boton) {
   const lista = [...archivos].filter(f => /\.(pdf|docx|txt)$/i.test(f.name));
   if (!lista.length) {
     mostrarEstado('Ninguno de esos archivos es un PDF, DOCX o TXT.', 'error');
@@ -50,6 +55,7 @@ async function generarResumen(archivos, sinAnonimizar, boton) {
 
   const original = boton.textContent;
   boton.disabled = true;
+  $('#bloquePrevia').hidden = true;
   try {
     const elementos = [];
     for (let i = 0; i < lista.length; i++) {
@@ -73,24 +79,36 @@ async function generarResumen(archivos, sinAnonimizar, boton) {
       }
     }
 
-    boton.textContent = 'Generando Word…';
-    mostrarEstado('Generando el documento Word…');
-    const { resumenFichasDocxBlob } = await cargarExportDocx();
     const fecha = new Date().toISOString().slice(0, 10);
-    // Mismo texto para el nombre del archivo y para el título del propio
-    // documento (encabezado y metadatos de Word) — pedido explícitamente
-    // para que uno y otro coincidan siempre.
-    const titulo = `Resumen_decretos_${fecha}`;
-    const blob = await resumenFichasDocxBlob(elementos, { anonimo: !sinAnonimizar, titulo });
-    descargar(`${titulo}.docx`, blob,
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    tituloActual = `Resumen_decretos_${fecha}`;
+    const markdown = resumenFichasMarkdown(elementos, { anonimo: !sinAnonimizar, mostrarMandato: false });
+    $('#textoPrevia').value = markdown;
+    $('#bloquePrevia').hidden = false;
 
     const conFicha = elementos.filter(e => e.ficha).length;
     mostrarEstado(
-      `Listo: ${elementos.length} archivo(s) recibido(s), ${conFicha} con ficha, ${elementos.length - conFicha} sin leer.`);
-    setTimeout(ocultarEstado, 8000);
+      `Listo: ${elementos.length} archivo(s) recibido(s), ${conFicha} con ficha, ${elementos.length - conFicha} sin leer. Revisa el texto de abajo antes de descargar.`);
   } catch (err) {
-    mostrarEstado('No se ha podido generar el resumen: ' + err.message, 'error');
+    mostrarEstado('No se ha podido generar la vista previa: ' + err.message, 'error');
+  } finally {
+    boton.disabled = false;
+    boton.textContent = original;
+  }
+}
+
+/** Convierte a Word el texto de la vista previa — ya editado, si hacía falta — y lo descarga. */
+async function descargarWord(boton) {
+  const original = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = 'Generando Word…';
+  try {
+    const { markdownADocxBlob } = await cargarExportDocx();
+    const titulo = tituloActual || `Resumen_decretos_${new Date().toISOString().slice(0, 10)}`;
+    const blob = await markdownADocxBlob($('#textoPrevia').value, { titulo });
+    descargar(`${titulo}.docx`, blob,
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  } catch (err) {
+    mostrarEstado('No se ha podido generar el documento Word: ' + err.message, 'error');
   } finally {
     boton.disabled = false;
     boton.textContent = original;
@@ -135,8 +153,10 @@ function iniciar() {
 
   btnGenerar.addEventListener('click', () => {
     if (!archivosSeleccionados) return;
-    generarResumen(archivosSeleccionados, $('#chkSinAnonimizar').checked, btnGenerar);
+    generarVistaPrevia(archivosSeleccionados, $('#chkSinAnonimizar').checked, btnGenerar);
   });
+
+  $('#btnDescargarWord').addEventListener('click', (e) => descargarWord(e.currentTarget));
 }
 
 iniciar();

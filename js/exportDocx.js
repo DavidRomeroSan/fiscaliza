@@ -353,3 +353,98 @@ export async function informeConsolidadoDocxBlob(entradas, patrones = [], resume
   const doc = new docx.Document({ sections: [{ children: hijos }] });
   return docx.Packer.toBlob(doc);
 }
+
+/* ─────────── Markdown (editado a mano en la vista previa) a Word ─────────── */
+
+/** Trocea "texto **negrita** más texto" en TextRuns, respetando el negrita. */
+function lineaConNegrita(docx, texto) {
+  // El doble asterisco (negrita) se comprueba antes que el simple (cursiva)
+  // en la propia alternativa de la regex: si no, "**negrita**" se trocearía
+  // primero por sus asteriscos internos como si fueran cursiva.
+  const partes = texto.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
+  return partes.map(p => {
+    const negrita = p.match(/^\*\*([^*]+)\*\*$/);
+    if (negrita) return new docx.TextRun({ text: negrita[1], bold: true });
+    const cursiva = p.match(/^\*([^*]+)\*$/);
+    if (cursiva) return new docx.TextRun({ text: cursiva[1], italics: true });
+    return new docx.TextRun(p);
+  });
+}
+
+/**
+ * Convierte a Word el Markdown que genera resumenFichasMarkdown() —
+ * potencialmente editado a mano por quien lo revisa en la vista previa antes
+ * de descargar. No es un parser de Markdown completo: solo lo que de verdad
+ * usan las plantillas de este proyecto (encabezados, negrita, listas,
+ * tablas con "|" y una línea horizontal "---" como separador), que es lo
+ * único que puede sobrevivir a una edición a mano sin romperse.
+ */
+export async function markdownADocxBlob(markdown, opciones = {}) {
+  const docx = await cargarDocx();
+  const lineas = markdown.replace(/\r\n/g, '\n').split('\n');
+  const hijos = [];
+  let i = 0;
+
+  const esLineaEspecial = (l) =>
+    /^\s*$/.test(l) || /^---+\s*$/.test(l) || /^#{1,3}\s/.test(l) ||
+    /^\s*[-*]\s+/.test(l) || /^\s*\d+\.\s+/.test(l) || /^\s*\|.*\|\s*$/.test(l);
+
+  while (i < lineas.length) {
+    const linea = lineas[i];
+
+    if (/^\s*$/.test(linea)) { i++; continue; }
+
+    if (/^---+\s*$/.test(linea)) {
+      hijos.push(new docx.Paragraph({
+        border: { bottom: { style: docx.BorderStyle.SINGLE, size: 6, color: 'CCCCCC' } },
+        spacing: { after: 120 },
+      }));
+      i++; continue;
+    }
+    if (linea.startsWith('### ')) { hijos.push(h3(docx, linea.slice(4).trim())); i++; continue; }
+    if (linea.startsWith('## ')) { hijos.push(h2(docx, linea.slice(3).trim())); i++; continue; }
+    if (linea.startsWith('# ')) { hijos.push(h1(docx, linea.slice(2).trim())); i++; continue; }
+
+    if (/^\s*[-*]\s+/.test(linea)) {
+      const contenido = linea.replace(/^\s*[-*]\s+/, '');
+      hijos.push(new docx.Paragraph({ children: lineaConNegrita(docx, contenido), bullet: { level: 0 }, spacing: { after: 60 } }));
+      i++; continue;
+    }
+    if (/^\s*\d+\.\s+/.test(linea)) {
+      const contenido = linea.replace(/^\s*\d+\.\s+/, '');
+      hijos.push(new docx.Paragraph({ children: lineaConNegrita(docx, contenido), spacing: { after: 60 } }));
+      i++; continue;
+    }
+
+    if (/^\s*\|.*\|\s*$/.test(linea)) {
+      // Tabla: recoge todas las filas seguidas, salta la línea separadora "|---|---|".
+      const filas = [];
+      while (i < lineas.length && /^\s*\|.*\|\s*$/.test(lineas[i])) {
+        const celdasTxt = lineas[i].trim().slice(1, -1).split('|').map(c => c.trim());
+        if (!celdasTxt.every(c => /^:?-+:?$/.test(c))) filas.push(celdasTxt);
+        i++;
+      }
+      if (filas.length) {
+        const filasDocx = filas.map((celdasTxt, idx) =>
+          filaTabla(docx, celdasTxt.map(c => celda(docx, c, { cabecera: idx === 0 }))));
+        hijos.push(new docx.Table({ rows: filasDocx, width: { size: 100, type: docx.WidthType.PERCENTAGE } }));
+        hijos.push(parrafo(docx, ''));
+      }
+      continue;
+    }
+
+    // Párrafo normal: junta las líneas seguidas hasta la próxima línea vacía
+    // o especial — así un párrafo que se reparte en varias líneas no sale
+    // como una fila suelta por línea.
+    const buffer = [linea];
+    i++;
+    while (i < lineas.length && !esLineaEspecial(lineas[i])) {
+      buffer.push(lineas[i]);
+      i++;
+    }
+    hijos.push(new docx.Paragraph({ children: lineaConNegrita(docx, buffer.join(' ')), spacing: { after: 120 } }));
+  }
+
+  const doc = new docx.Document({ title: opciones.titulo, sections: [{ children: hijos }] });
+  return docx.Packer.toBlob(doc);
+}
