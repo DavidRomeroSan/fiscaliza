@@ -431,6 +431,12 @@ export function clasificar(texto, nLineas = 0) {
 /* ────────────────────────── extracción de campos ────────────────────────── */
 
 export function extraerExpediente(texto) {
+  // "EXPTE." / "EXTE" / "EXP" son variantes reales del mismo campo — y en un
+  // decreto real de sanciones de tráfico masivas ("Expte. 4809 /2026.") es
+  // el ÚNICO sitio donde consta el expediente, sin "Expediente:" completo en
+  // ningún otro sitio del documento. Tolera también el espacio suelto antes
+  // de la barra que aparece en ese mismo decreto ("4809 /2026").
+  const abrev = texto.match(/\bEX(?:P|PTE|TE)\.?\s*:?\s*(\d{1,6})\s*\/\s*(\d{4})/i);
   return (
     // Las convocatorias de Junta de Gobierno Local usan su propio formato
     // "JGL/2026/32" en vez del numérico habitual. Se comprueba antes que el
@@ -440,7 +446,7 @@ export function extraerExpediente(texto) {
     buscar(texto, /\bExpediente\s*N?[.ºo°]*\s*:?\s*(JGL\/\d{4}\/\d{1,4})/i) ||
     buscar(texto, /\bEXPEDIENTE\s+N?[.ºo°]*\s*:?\s*(\d{1,6}\/\d{4})/i) ||
     buscar(texto, /\bExpediente\s*N?[.ºo°]*\s*:?\s*(\d{1,6}\/\d{4})/i) ||
-    buscar(texto, /\bEXTE[.:]?\s*(\d{1,6}\/\d{4})/i) ||
+    (abrev ? `${abrev[1]}/${abrev[2]}` : null) ||
     buscar(texto, /(\d{1,6}\/\d{4})\s+Expediente/i)
   );
 }
@@ -671,6 +677,52 @@ export function extraerOrdenDelDia(texto) {
   return puntos;
 }
 
+/**
+ * Punto resolutivo real: lo que se decide, no lo que se pide (objeto) ni por
+ * qué (fundamentos). Muchos decretos de licencias, exenciones, cementerio,
+ * etc. repiten "RESOLUCIÓN" (o "DISPONGO") como encabezado de sección justo
+ * antes de los puntos numerados — una SEGUNDA vez, porque la primera es solo
+ * el título del propio documento — y el cuerpo de "HECHOS Y FUNDAMENTOS DE
+ * DERECHO" puede tener su propia numeración PRIMERO/SEGUNDO (argumentando,
+ * no resolviendo). Por eso se ancla siempre al ÚLTIMO encabezado de este
+ * tipo, nunca al primer "PRIMERO" que aparezca en el documento.
+ *
+ * El encabezado debe ocupar su propia línea (nada más en ella): "DISPONGO :
+ * la conclusión de los mismos..." en un decreto real de sanciones de tráfico
+ * NO es un encabezado, es la propia frase resolutiva en prosa continua —
+ * ese caso no tiene un punto resolutivo limpio que extraer aquí.
+ */
+export function extraerResolucion(texto) {
+  const encabezados = [...texto.matchAll(/^[ \t]*(?:RESOLUCI[ÓO]N|DISPONGO)[ \t]*:?[ \t]*$/gim)];
+  if (!encabezados.length) return null;
+  const ultimo = encabezados[encabezados.length - 1];
+  const inicio = ultimo.index + ultimo[0].length;
+
+  const resto = texto.slice(inicio);
+  const finRel = resto.search(/\n[ \t]*º?En Santa Fe|\n[ \t]*DOCUMENTO FIRMADO|\n[ \t]*EL (?:ALCALDE|CONCEJAL)|\n[ \t]*LA CONCEJAL/i);
+  const bloque = (finRel === -1 ? resto : resto.slice(0, finRel))
+    // Mismos fragmentos sueltos del pie de esPublico Gestiona que
+    // extraerOrdenDelDia() limpia — ver datosDelPieDecreto.
+    .replace(/^[ \t]*Fecha:\s*\d{1,2}\/\d{1,2}\/\d{4}[ \t]*$/gim, '')
+    .replace(/^[ \t]*N[uú]mero:\s*\d{4}[-\/]\d{3,5}[ \t]*$/gim, '')
+    .replace(/^[ \t]*DECRETO[ \t]*$/gim, '');
+
+  // "PRIMERO" cuando hay varios puntos, "ÚNICO" cuando solo se resuelve uno.
+  const m = bloque.match(/(?:PRIMERO|[UÚ]NICO)\b[ \t]*[.:]*[ \t]*-?[ \t]*([\s\S]+?)(?=\n[ \t]*SEGUNDO\b|$)/i);
+  if (!m) return null;
+  const punto = m[1].replace(/\s+/g, ' ').trim();
+  return punto || null;
+}
+
+/** Nº de expedientes de un decreto de sanciones de tráfico masivo (no hay
+ * un punto resolutivo único que resumir: son decenas de sanciones en una
+ * tabla, y el dato que importa es cuántas y por cuánto en total). */
+export function extraerTotalExpedientesSancionadores(texto) {
+  const n = buscar(texto, /Total\s+n[uú]m\.?\s+Expedientes:?\s*(\d+)/i)
+    || buscar(texto, /Total\s+expedientes:?\s*(\d+)/i);
+  return n ? parseInt(n, 10) : null;
+}
+
 /* ────────────────────────── el reparo, en detalle ────────────────────────── */
 
 /**
@@ -795,6 +847,8 @@ export function analizar(texto, nombreArchivo = '') {
       objeto: 'Índice del libro de decretos: no es un decreto individual, es el listado de la remesa recibida.',
       beneficiario: null,
       ordenDelDia: [],
+      resolucion: null,
+      totalExpedientesSancionadores: null,
       fecha: null,
       fechaOrigen: null,
       firmante: null,
@@ -850,6 +904,8 @@ export function analizar(texto, nombreArchivo = '') {
     objeto: extraerObjeto(texto),
     beneficiario: extraerBeneficiario(texto),
     ordenDelDia: extraerOrdenDelDia(texto),
+    resolucion: extraerResolucion(texto),
+    totalExpedientesSancionadores: extraerTotalExpedientesSancionadores(texto),
     fecha: fecha.iso,
     fechaOrigen: fecha.origen,
     firmante,
