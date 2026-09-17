@@ -34,10 +34,18 @@
       </label>
 
       <button class="boton boton--principal boton--grande" id="btnGenerarResumen" disabled>
-        Generar resumen y descargar (Word)
+        Generar resumen
       </button>
 
       <div class="estado" id="estado" hidden></div>
+
+      <div class="vistaPrevia" id="bloquePrevia" hidden>
+        <h2 class="bloque__titulo">Vista previa — puedes editar el texto antes de descargar</h2>
+        <textarea class="vistaPrevia__texto" id="textoPrevia" spellcheck="false"></textarea>
+        <button class="boton boton--principal boton--grande" id="btnDescargarWord">
+          Descargar Word
+        </button>
+      </div>
     </section>
 
     <aside class="lateral">
