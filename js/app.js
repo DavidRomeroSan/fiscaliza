@@ -79,8 +79,19 @@ async function generarVistaPrevia(archivos, sinAnonimizar, boton) {
       }
     }
 
-    const fecha = new Date().toISOString().slice(0, 10);
-    tituloActual = `Resumen_decretos_${fecha}`;
+    // La fecha del nombre es la del decreto más reciente del lote, no la del
+    // día en que se genera el resumen: así el archivo dice hasta cuándo
+    // llega la remesa analizada, que es el dato que de verdad importa para
+    // distinguir un lote de otro. Si ningún decreto tiene fecha reconocida
+    // (p. ej. todos ilegibles), se usa la fecha de hoy como último recurso.
+    const fechasDecretos = elementos
+      .map(e => e.ficha?.fecha)
+      .filter(Boolean)
+      .sort();
+    const fechaHasta = fechasDecretos.length
+      ? fechasDecretos[fechasDecretos.length - 1]
+      : new Date().toISOString().slice(0, 10);
+    tituloActual = `Resumen_decretos_hasta_${fechaHasta}`;
     const markdown = resumenFichasMarkdown(elementos, { anonimo: !sinAnonimizar, mostrarMandato: false });
     $('#textoPrevia').value = markdown;
     $('#bloquePrevia').hidden = false;
