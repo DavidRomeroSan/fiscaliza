@@ -618,7 +618,15 @@ Ingeniero Técnico Municipal de fecha 27 de agosto de 2026, las actividades soli
 
 RESOLUCIÓN
 
-PRIMERO: Conceder a KOMMAFEST SL, autorización para la INSTALACIÓN y PUESTA EN FUNCIONAMIENTO de una Caseta Joven.
+PRIMERO: Conceder a KOMMAFEST SL, autorización para la INSTALACIÓN y PUESTA EN FUNCIONAMIENTO de una Caseta Joven, en el espacio anteriormente indicado, con las condiciones siguientes:
+
+1. La actividad autorizada será la establecida en el punto II.11. Actividades de ocio y esparcimiento.
+2. El horario de apertura será el fijado en el Pliego de cláusulas administrativas.
+3. Deberá cumplir cualquier otro requisito que la legislación sobre la materia le exija.
+4. Se designa como responsable de la seguridad del establecimiento a: D. Agustín Heredia Cruz.
+5. El aforo de personas permitido es de 590 personas, sin que en modo alguno pueda superarse.
+
+SEGUNDO: El Pliego de condiciones para la cesión del uso de los espacios constituye condición material de la cesión del espacio.
 
 TERCERO: Háganse las notificaciones que procedan, encomendando a la Jefatura de la Policía Local la supervisión, vigilancia y control de la actividad, de forma que si comprobasen que no se están cumpliendo las condiciones u obligaciones indicadas, levantarán acta de denuncia a los efectos de imponer las sanciones que correspondiesen, dando traslado a esta Concejalía para adoptar la resolución que procediese.
 
@@ -802,6 +810,27 @@ Total núm. Expedientes: 17 Total Importe principal: 8.700,00 €
 
 En Santa Fe a fecha de firma electrónica.
 EL ALCALDE-PRESIDENTE`
+},
+
+{
+  id: 'baja-padron-resuelvo-2026-1459',
+  // Decreto real (2026-1459, baja de oficio en el Padrón de Habitantes)
+  // encontrado por un compañero revisando el resumen: usa "RESUELVO" como
+  // encabezado del punto resolutivo, no "RESOLUCIÓN" ni "DISPONGO" — antes
+  // de este arreglo se quedaba sin extraer ninguna resolución.
+  esperado: {},
+  texto: `Visto lo dispuesto en el Reglamento de Población y Demarcación Territorial de las Entidades Locales, así como la Resolución de 29 de abril de 2020, de la Presidencia del Instituto Nacional de Estadística y de la Dirección General de Cooperación Autonómica y Local, por la que se dictan instrucciones técnicas a los Ayuntamientos sobre la gestión del Padrón municipal.
+
+RESUELVO
+
+PRIMERO: El inicio de expediente de baja de oficio en el Padrón de Habitantes de MANUEL ESTEBAN DIAZ CARRILLO.
+
+SEGUNDO: Dar audiencia al interesado concediendo un plazo de quince días para que pueda formular las alegaciones que estime pertinentes.
+
+En Santa Fe a fecha de firma electrónica, EL ALCALDE-PRESIDENTE,
+
+Número: 2026-1459
+DECRETO`
 },
 
 {

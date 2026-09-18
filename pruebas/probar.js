@@ -233,6 +233,10 @@ comprobar(caseta.decreto === '2026-1651', `número de decreto del pie, no el de 
 comprobar(caseta.fecha === '2026-08-28', `fecha del pie, no la de la delegación (2023-06-22) → "${caseta.fecha}"`);
 comprobar(!/^del Expediente/i.test(caseta.objeto || ''), `objeto sin el "del Expediente:" colado por delante → "${caseta.objeto}"`);
 comprobar(caseta.tipo !== 'multa', `la cláusula de estilo sobre sanciones futuras no clasifica la licencia como multa → tipo "${caseta.tipo}"`);
+comprobar(
+  caseta.resolucion === 'Conceder a KOMMAFEST SL, autorización para la INSTALACIÓN y PUESTA EN FUNCIONAMIENTO de una Caseta Joven, en el espacio anteriormente indicado, con las condiciones siguientes:',
+  `resolución cortada antes de la sublista de condiciones numeradas (1., 2., 3...), no todo el clausulado → "${caseta.resolucion}"`
+);
 
 console.log('\n━━━ ayuda social básica: objeto sin basura, firmante con punto antes de Fdo., beneficiario ━━━');
 const ayuda = fichas.find(f => f.archivo.startsWith('ayuda-social-basica-2026-1528'));
@@ -293,6 +297,13 @@ comprobar(!/Terceros identificados/.test(fichaMarkdown(sanciones)),
 comprobar(
   sanciones.resolucion === null,
   `sin punto resolutivo limpio que extraer ("DISPONGO :" en prosa continua, no es un encabezado) → "${sanciones.resolucion}"`
+);
+
+console.log('\n━━━ resolución: "RESUELVO" también cuenta como encabezado (aportación de un compañero) ━━━');
+const bajaPadron = fichas.find(f => f.archivo.startsWith('baja-padron-resuelvo-2026-1459'));
+comprobar(
+  /^El inicio de expediente de baja de oficio en el Padrón de Habitantes de/.test(bajaPadron.resolucion || ''),
+  `resolución bajo "RESUELVO" → "${bajaPadron.resolucion}"`
 );
 
 console.log('\n━━━ índice del libro de decretos: no es un decreto individual ━━━');

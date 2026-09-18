@@ -680,20 +680,32 @@ export function extraerOrdenDelDia(texto) {
 /**
  * Punto resolutivo real: lo que se decide, no lo que se pide (objeto) ni por
  * qué (fundamentos). Muchos decretos de licencias, exenciones, cementerio,
- * etc. repiten "RESOLUCIÓN" (o "DISPONGO") como encabezado de sección justo
- * antes de los puntos numerados — una SEGUNDA vez, porque la primera es solo
- * el título del propio documento — y el cuerpo de "HECHOS Y FUNDAMENTOS DE
- * DERECHO" puede tener su propia numeración PRIMERO/SEGUNDO (argumentando,
- * no resolviendo). Por eso se ancla siempre al ÚLTIMO encabezado de este
- * tipo, nunca al primer "PRIMERO" que aparezca en el documento.
+ * padrón, etc. repiten "RESOLUCIÓN", "DISPONGO" o "RESUELVO" como encabezado
+ * de sección justo antes de los puntos numerados — una SEGUNDA vez si es
+ * "RESOLUCIÓN", porque la primera es solo el título del propio documento —
+ * y el cuerpo de "HECHOS Y FUNDAMENTOS DE DERECHO" puede tener su propia
+ * numeración PRIMERO/SEGUNDO (argumentando, no resolviendo). Por eso se
+ * ancla siempre al ÚLTIMO encabezado de este tipo, nunca al primer
+ * "PRIMERO" que aparezca en el documento.
+ *
+ * Encontrado por un compañero revisando el resumen: los decretos que usan
+ * "RESUELVO" (en vez de "RESOLUCIÓN" o "DISPONGO") como encabezado del punto
+ * resolutivo se quedaban sin extraer nada — real en un decreto de baja de
+ * oficio en el Padrón de Habitantes (2026-1459): "RESUELVO \n\n PRIMERO: El
+ * inicio de expediente de baja de oficio...".
  *
  * El encabezado debe ocupar su propia línea (nada más en ella): "DISPONGO :
  * la conclusión de los mismos..." en un decreto real de sanciones de tráfico
  * NO es un encabezado, es la propia frase resolutiva en prosa continua —
- * ese caso no tiene un punto resolutivo limpio que extraer aquí.
+ * ese caso no tiene un punto resolutivo limpio que extraer aquí. Por la
+ * misma razón, una convocatoria de Junta de Gobierno Local también dice
+ * "RESUELVO" seguido de "PRIMERO. Convocar Sesión...", pero ese contenido ya
+ * lo recoge extraerOrdenDelDia(): analizar() descarta el resultado de esta
+ * función para ese tipo de decreto, para no duplicarlo como un bloque de
+ * texto enorme.
  */
 export function extraerResolucion(texto) {
-  const encabezados = [...texto.matchAll(/^[ \t]*(?:RESOLUCI[ÓO]N|DISPONGO)[ \t]*:?[ \t]*$/gim)];
+  const encabezados = [...texto.matchAll(/^[ \t]*(?:RESOLUCI[ÓO]N|DISPONGO|RESUELVO)[ \t]*:?[ \t]*$/gim)];
   if (!encabezados.length) return null;
   const ultimo = encabezados[encabezados.length - 1];
   const inicio = ultimo.index + ultimo[0].length;
@@ -708,7 +720,12 @@ export function extraerResolucion(texto) {
     .replace(/^[ \t]*DECRETO[ \t]*$/gim, '');
 
   // "PRIMERO" cuando hay varios puntos, "ÚNICO" cuando solo se resuelve uno.
-  const m = bloque.match(/(?:PRIMERO|[UÚ]NICO)\b[ \t]*[.:]*[ \t]*-?[ \t]*([\s\S]+?)(?=\n[ \t]*SEGUNDO\b|$)/i);
+  // También se corta en una sublista "1. / 2. / 3....": en las licencias de
+  // actividad, el propio punto PRIMERO ("Conceder... con las condiciones
+  // siguientes:") suele llevar detrás una decena de condiciones legales
+  // numeradas así — sin este límite, la "resolución" se llevaba por delante
+  // todo el clausulado entero en vez de quedarse solo con lo que se decide.
+  const m = bloque.match(/(?:PRIMERO|[UÚ]NICO)\b[ \t]*[.:]*[ \t]*-?[ \t]*([\s\S]+?)(?=\n[ \t]*SEGUNDO\b|\n[ \t]*\d{1,2}\.[ \t]|$)/i);
   if (!m) return null;
   const punto = m[1].replace(/\s+/g, ' ').trim();
   return punto || null;
@@ -904,7 +921,11 @@ export function analizar(texto, nombreArchivo = '') {
     objeto: extraerObjeto(texto),
     beneficiario: extraerBeneficiario(texto),
     ordenDelDia: extraerOrdenDelDia(texto),
-    resolucion: extraerResolucion(texto),
+    // Una convocatoria de JGL también dice "RESUELVO... PRIMERO. Convocar
+    // Sesión... ORDEN DEL DÍA..." — ese contenido ya lo recoge ordenDelDia
+    // (ver el comentario de extraerResolucion), así que aquí se descarta
+    // para no duplicar el orden del día entero como si fuera "la resolución".
+    resolucion: clasificacion.tipo === 'junta_gobierno' ? null : extraerResolucion(texto),
     totalExpedientesSancionadores: extraerTotalExpedientesSancionadores(texto),
     fecha: fecha.iso,
     fechaOrigen: fecha.origen,
