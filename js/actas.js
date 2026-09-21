@@ -1,9 +1,11 @@
 /**
  * actas.js — Actas de la Junta de Gobierno Local.
  *
- * Solo recoge lo que el acta dice, tal cual: cabecera, título de cada punto,
- * sentido y recuento de la votación, las intervenciones citadas literalmente,
- * los puntos de la resolución y los anexos. No interpreta ni cruza datos.
+ * Solo recoge lo que el acta dice, tal cual: cabecera, asistentes, título de
+ * cada punto, sentido y recuento de la votación, las intervenciones citadas
+ * literalmente, el primer punto de la resolución (no los de mero trámite de
+ * notificación), los anexos y, de estos, la tabla de puestos de trabajo si la
+ * hay. No interpreta ni cruza datos.
  *
  * Calibrado sobre el acta real JGL/2026/31 (sesión extraordinaria del
  * 13/08/2026), tal y como la reconstruye extract.js: el pie rotado de
@@ -93,12 +95,78 @@ function puntosDeResolucion(lineas) {
   return puntos.map(p => ({ ordinal: p.ordinal, texto: unir(p.lineas) }));
 }
 
+// Puntos de la resolución que solo mandan notificar o comunicar el acuerdo a
+// las partes: no aportan nada al resumen.
+const SOLO_NOTIFICA = /^(?:Notificar|Comunicar|Dar traslado|H[áa]gan?se|Trasladar|Remitir)\b/i;
+
+/** La primera resolución que no sea de mero trámite de notificación. */
+const primeraResolucion = (puntos) => puntos.filter(r => !SOLO_NOTIFICA.test(r.texto)).slice(0, 1);
+
 function importes(texto) {
   const vistos = [];
   for (const m of texto.matchAll(/(\d{1,3}(?:\.\d{3})*,\d{2})\s*€/g)) {
     if (!vistos.includes(m[1])) vistos.push(m[1]);
   }
   return vistos.map(v => `${v} €`);
+}
+
+const TRATAMIENTO = '(?:D\\.ª|Dª|D\\.|Doña|Don)';
+const NOMBRE = "[A-ZÁÉÍÓÚÑ][\\p{L}'’-]*(?:\\s+(?:(?:de|del|de la|de los|de las|la)\\s+)?[A-ZÁÉÍÓÚÑ][\\p{L}'’-]*)*";
+
+/** Nombres (sin tratamiento) tras "D." / "Dª" en un fragmento de texto. */
+function nombres(fragmento) {
+  const re = new RegExp(`(?<![\\p{L}])${TRATAMIENTO}\\s+(${NOMBRE})`, 'gu');
+  return [...fragmento.matchAll(re)].map(m => m[1].trim());
+}
+
+/** Quién preside, quién asiste (concejales e invitados) y quién da fe, del
+ * párrafo de apertura. Solo los nombres, no la frase. */
+function asistentes(texto) {
+  const pos = (re) => texto.search(re);
+  const marcas = [
+    ['presidente', pos(/\bPreside\b/i)],
+    ['concejales', pos(/\basisten\b(?!\s+como\s+invitad)/i)],
+    ['invitados', pos(/\basisten?\s+como\s+invitad/i)],
+    ['secretaria', pos(/\bbajo la fe\b|\bfe de la Secretar/i)],
+  ].filter(([, i]) => i >= 0).sort((a, b) => a[1] - b[1]);
+  const out = { presidente: [], concejales: [], invitados: [], secretaria: [] };
+  marcas.forEach(([clave, ini], k) => {
+    out[clave] = nombres(texto.slice(ini, k + 1 < marcas.length ? marcas[k + 1][1] : texto.length));
+  });
+  return Object.values(out).some(v => v.length) ? out : null;
+}
+
+/** Líneas de cada anexo, por número: las que siguen a la cabecera "Anexo N"
+ * que se repite en cada página del anexo, a partir del índice de anexos. */
+function textoDeAnexos(lineas, desde) {
+  const out = {};
+  if (desde < 0) return out;
+  let n = null;
+  for (let i = desde; i < lineas.length; i++) {
+    const m = lineas[i].match(/^Anexo\s+(\d+)$/i);
+    if (m) { n = m[1]; out[n] ??= []; continue; }
+    if (n) out[n].push(lineas[i]);
+  }
+  return out;
+}
+
+/** Tabla "PUESTO / N.º DE PLAZAS … TOTAL n" de unas bases, si el anexo la trae. */
+function puestosDeTrabajo(lineas) {
+  const ini = lineas.findIndex(l => /^PUESTOS?\s+N\.?\s*[º°o]\.?\s*DE\s+PLAZAS/i.test(l));
+  if (ini < 0) return null;
+  const filas = [];
+  let total = null;
+  let pendiente = '';
+  for (const l of lineas.slice(ini + 1)) {
+    const t = l.match(/^TOTAL\s+(\d+)$/i);
+    if (t) { total = +t[1]; break; }
+    const f = l.match(/^(.+?)\s+(\d{1,3})$/);
+    if (f) { filas.push({ puesto: `${pendiente} ${f[1]}`.trim(), plazas: +f[2] }); pendiente = ''; continue; }
+    // Un nombre de puesto partido en dos líneas; cualquier otra cosa es texto ajeno a la tabla.
+    if (l.length < 40 && !pendiente) { pendiente = l; continue; }
+    break;
+  }
+  return filas.length ? { filas, total } : null;
 }
 
 function analizarPunto(numero, bloque) {
@@ -129,8 +197,9 @@ function analizarPunto(numero, bloque) {
     let iAnexos = bloque.findIndex((l, i) => i > iResol && /^Documentos anexos:?/i.test(l));
     const fin = iAnexos >= 0 ? iAnexos : bloque.length;
     const lineasRes = bloque.slice(iResol + 1, fin);
-    textoResolucion = lineasRes.join(' ');
-    resolucion = puntosDeResolucion(lineasRes);
+    textoResolucion = lineasRes.join(' '); // los importes se buscan en toda la resolución
+    const todos = puntosDeResolucion(lineasRes);
+    resolucion = primeraResolucion(todos);
     if (iAnexos >= 0) {
       for (const l of bloque.slice(iAnexos + 1)) {
         if (/^Anexo\s+\d+\./i.test(l)) anexos.push(l);
@@ -194,6 +263,17 @@ export function analizarActa(textoBruto, nombreArchivo = '') {
     puntos.push(analizarPunto(k + 1, lineas.slice(ini, hasta)));
   });
 
+  // Puestos de trabajo: se leen del texto del anexo que cada punto cita.
+  const iIndice = lineas.findIndex(l => /^[ÍI]NDICE DE ANEXOS/i.test(l));
+  const anexos = textoDeAnexos(lineas, iIndice >= 0 ? iIndice : (iFirma >= 0 ? iFirma : -1));
+  for (const p of puntos) {
+    for (const a of p.anexos) {
+      const n = a.match(/^Anexo\s+(\d+)\./i)?.[1];
+      const t = n && anexos[n] ? puestosDeTrabajo(anexos[n]) : null;
+      if (t) { p.puestos = { anexo: n, ...t }; break; }
+    }
+  }
+
   return {
     archivo: nombreArchivo,
     numeroActa: pie.decreto,
@@ -201,7 +281,7 @@ export function analizarActa(textoBruto, nombreArchivo = '') {
     expedienteSesion: titulo.match(/JGL\/\d{4}\/\d+/)?.[0] || lineas.join(' ').match(/JGL\/\d{4}\/\d+/)?.[0] || null,
     tipoSesion: titulo.match(/SESI[ÓO]N\s+(ORDINARIA|EXTRAORDINARIA)/i)?.[1].toLowerCase() || null,
     fechaSesion: f && mes ? `${f[3]}-${String(mes).padStart(2, '0')}-${String(f[1]).padStart(2, '0')}` : null,
-    apertura: iApertura >= 0 && iPartes > iApertura ? unir(lineas.slice(iApertura, iPartes)) : null,
+    asistentes: iApertura >= 0 && iPartes > iApertura ? asistentes(unir(lineas.slice(iApertura, iPartes))) : null,
     puntos,
     cierre: iCierre >= 0 ? unir(lineas.slice(iCierre, iFirma > iCierre ? iFirma : iCierre + 4)) : null,
   };

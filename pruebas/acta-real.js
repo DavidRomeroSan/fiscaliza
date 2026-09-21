@@ -346,4 +346,48 @@ Número: 2026-0032
 ACTA DE JUNTA DE GOBIERNO
  | 
  
+ÍNDICE DE ANEXOS ACTA JGL/2026/31
+A) PARTE RESOLUTIVA
+1. URBANISMO. Expediente 319/2026. Licencia de edificación, obras e instalaciones, así como de
+obras de urbanización complementarias a GESTIÓN LOGÍSTICA DE ALIMENTO EN FRÍO, SL
+- Anexo 1. ANEXO 1. COORDENADAS
+- Anexo 2. Acuerdo de la Agencia Estatal de Seguridad Aérea en materia de Servidumbres
+Aeronáuticas. Expediente N26-0105
+- Anexo 3. RESOLUCIÓN SOBRE AUTORIZACIÓN DE OBRAS O INSTALACIONES EN
+ZONAS DE PROTECCIÓN DE LAS CARRETERAS
+2. PERSONAL. Expediente 3383/2026. Aprobar las bases reguladoras que regirán el proceso
+selectivo de las personas a contratar en el marco del I Programa Municipal de empleo para
+mayores de treinta años
+- Anexo 4. BASES I PROGRAMA MUNICIPAL DE EMPLEO PARA MAYORES DE 30
+AÑOS.
+Fecha: 24/08/2026
+Número: 2026-0032
+ACTA DE JUNTA DE GOBIERNO
+ | 
+ 
+Anexo 4
+BASES REGULADORAS QUE REGIRÁN EL PROCESO SELECTIVO DE LAS PERSONAS
+A CONTRATAR EN EL MARCO DEL I PROGRAMA MUNICIPAL DE EMPLEO PARA
+MAYORES DE 30 AÑOS
+Primero. Objetivo y finalidad.
+Las presentes bases tienen por objeto regular el proceso selectivo de las personas a contratar en el
+marco del “I Programa Municipal de Empleo para Mayores de 30 años” , promovido por el
+Excmo. Ayuntamiento de Santa Fe, para la ejecución de proyectos y actuaciones de interés general y
+social en el municipio.
+El “I Programa Municipal de Empleo para Mayores de 30 años” tiene por finalidad favorecer la
+contratación de personas desempleadas de 30 años de edad o más, facilitando la adquisición de
+experiencia profesional mediante la realización de un trabajo efectivo en un entorno real,
+contribuyendo a la mejora de su empleabilidad y a sus posibilidades de posterior inserción laboral.
+En el marco del presente Programa se ofertan un total de NUEVE (9) puestos de trabajo , distribuidos
+de la siguiente manera:
+PUESTO N.º DE PLAZAS
+Jardinero/a 2
+Pintor/a 1
+Albañil 1 Fecha: 24/08/2026
+Conserje 2
+Ordenanza 2
+Empleado/a administrativo/a 1
+TOTAL 9
+Solo se podrá solicitar y optar un puesto de los ofertados, quedando excluidos aquellos/as que
+Número: 2026-0032
 `;

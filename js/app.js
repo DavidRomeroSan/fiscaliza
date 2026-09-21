@@ -31,7 +31,15 @@ async function cargarExportDocx() {
 const $ = (sel) => document.querySelector(sel);
 let archivosSeleccionados = null;
 let tituloActual = null; // mismo texto para el nombre del archivo y el título del Word
-const tipoElegido = () => document.querySelector('input[name="tipoDoc"]:checked')?.value || null;
+// Interruptor: el resumen de actas de la Junta de Gobierno Local está en
+// desarrollo y no se ofrece a los compañeros todavía. Con false no se muestra
+// el selector y todo lo que se sube se trata como decretos; el código de las
+// actas (actas.js, exportActa.js) sigue ahí y se activa cambiando esto y
+// quitando `hidden` del fieldset de index.html.
+const ACTAS_ACTIVAS = false;
+const tipoElegido = () => (ACTAS_ACTIVAS
+  ? document.querySelector('input[name="tipoDoc"]:checked')?.value || null
+  : 'decretos');
 
 function mostrarEstado(texto, tipo = 'trabajando') {
   const el = $('#estado');
@@ -77,7 +85,9 @@ async function generarVistaPrevia(archivos, sinAnonimizar, tipo, boton) {
           throw new Error('No parece un acta de Junta de Gobierno Local, y has indicado que subes actas.');
         }
         if (tipo === 'decretos' && pareceActa) {
-          throw new Error('Parece un acta de Junta de Gobierno Local, y has indicado que subes decretos.');
+          throw new Error(ACTAS_ACTIVAS
+            ? 'Parece un acta de Junta de Gobierno Local, y has indicado que subes decretos.'
+            : 'Parece un acta de Junta de Gobierno Local: por ahora la aplicación solo resume decretos.');
         }
         if (tipo === 'actas') {
           const proveedoresActa = terceros(extraerLineas(texto));

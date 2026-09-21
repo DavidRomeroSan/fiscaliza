@@ -4,7 +4,7 @@ import { extraerLineas, terceros } from '../js/lineas.js';
 import { analizar, fmtEuro } from '../js/parse.js';
 import { evaluarDecreto, evaluarPatrones, lecturaOposicion } from '../js/rules.js';
 import { limpiar } from '../js/extract.js';
-import { fichaMarkdown } from '../js/export.js';
+import { fichaMarkdown, resumenFichasMarkdown } from '../js/export.js';
 import { esActa, analizarActa } from '../js/actas.js';
 import { actaMarkdown } from '../js/exportActa.js';
 import { ACTA_TEXTO } from './acta-real.js';
@@ -316,8 +316,14 @@ const acta = analizarActa(ACTA_TEXTO, 'acta.pdf');
 comprobar(acta.numeroActa === '2026-0032' && acta.fechaFirma === '2026-08-24', `número y fecha de firma del pie → ${acta.numeroActa} / ${acta.fechaFirma}`);
 comprobar(acta.expedienteSesion === 'JGL/2026/31' && acta.tipoSesion === 'extraordinaria' && acta.fechaSesion === '2026-08-13',
   `sesión → ${acta.expedienteSesion} · ${acta.tipoSesion} · ${acta.fechaSesion}`);
-comprobar(/^En la ciudad de Santa Fe/.test(acta.apertura || '') && /Gema Vera\s+Baena/.test(acta.apertura || '') && !/Fecha:|Número:/.test(acta.apertura || ''),
-  'apertura literal, con la secretaria, sin fragmentos del pie colados');
+const as = acta.asistentes || {};
+comprobar(as.presidente?.join() === 'Juan Cobo Ortiz' && as.secretaria?.join() === 'Gema Vera Baena',
+  `apertura: preside y da fe, solo el nombre → ${as.presidente} / ${as.secretaria}`);
+comprobar(as.concejales?.length === 5 && as.concejales[2] === 'Francisco Javier Valencia Jordán' && as.concejales[4] === 'Silvia Enríquez Gallego',
+  `apertura: 5 concejales, con nombre compuesto y el último tras "y" → ${as.concejales?.join(' · ')}`);
+comprobar(as.invitados?.join(' · ') === 'Elisabeth Jiménez González · Rubén Martínez Bermúdez',
+  'apertura: los dos invitados van aparte de los concejales');
+comprobar(!('apertura' in acta), 'la apertura ya no se copia literal');
 comprobar(acta.puntos.length === 5, `5 puntos: la sublista "1.- … 6.-" de un informe reproducido en el punto 5 no cuenta como puntos nuevos → ${acta.puntos.length}`);
 const [p1, p2, p3, p4, p5] = acta.puntos;
 comprobar(p2.area === 'HACIENDA Y GESTIÓN ECONÓMICA' && p2.expediente === '4827/2026' && /^Aprobación de factura con registro nº 2026\/2439/.test(p2.objeto),
@@ -333,18 +339,31 @@ comprobar(/Sra\. Concejal del Grupo Municipal VOX/.test(p1.intervenciones[1]),
 comprobar(!p1.intervenciones.some(i => /^A continuación, se somete|^El Sr\. Alcalde-Presidente pregunta/.test(i)),
   'punto 1: el trámite (pregunta y votación) no se cuenta como intervención');
 comprobar(p2.intervenciones.length === 0 && p3.intervenciones.length === 0, 'puntos con tabla de votación y solo fundamentos: sin intervenciones inventadas');
-comprobar(p3.resolucion.length === 3 && /condiciones :$/.test(p3.resolucion[1].texto) && !/1ª/.test(p3.resolucion[1].texto),
-  `punto 3: el SEGUNDO se corta en "…siguientes condiciones :", no arrastra las 12 condiciones → "${p3.resolucion[1]?.texto}"`);
+comprobar(p3.resolucion.length === 1 && p3.resolucion[0].ordinal === 'PRIMERO' && /^Otorgar licencia de edificación/.test(p3.resolucion[0].texto),
+  `punto 3: solo la primera resolución → ${p3.resolucion.map(r => r.ordinal)}`);
+comprobar(acta.puntos.every(p => p.resolucion.length <= 1), 'ningún punto lleva más de una resolución');
 comprobar(p3.importes.includes('627.825,64 €') && p3.importes.includes('32.542,60 €'), `punto 3: importes de la tabla de la resolución → ${p3.importes.join(' · ')}`);
 comprobar(p3.anexos.length === 3 && /^Anexo 3\. RESOLUCIÓN SOBRE AUTORIZACIÓN DE OBRAS O INSTALACIONES EN ZONAS DE PROTECCIÓN DE LAS CARRETERAS$/.test(p3.anexos[2]),
   'punto 3: 3 anexos, el tercero (partido en dos líneas) recompuesto');
 comprobar(p4.importes.join('|') === '50.000,00 €' && p4.anexos.length === 1, `punto 4: importe y anexo → ${p4.importes.join('|')} / ${p4.anexos.length}`);
-comprobar(p5.resolucion.length === 3 && /^Excluir a las empresas ESPECT MANAGEMENT 2008 SL\. y ORBIS FESTUM SL\./.test(p5.resolucion[0].texto),
-  'punto 5: tres puntos de resolución; "PRIMERO ." con espacio antes del punto también se reconoce');
+comprobar(p5.resolucion.length === 1 && /^Excluir a las empresas ESPECT MANAGEMENT 2008 SL\. y ORBIS FESTUM SL\./.test(p5.resolucion[0].texto),
+  'punto 5: "PRIMERO ." con espacio antes del punto se reconoce; el SEGUNDO y el TERCERO ("Háganse las notificaciones") no salen');
+comprobar(!acta.puntos.some(p => p.resolucion.some(r => /^(Notificar|Comunicar|Háganse)/i.test(r.texto))),
+  'ninguna resolución de mero trámite de notificación');
+comprobar(p4.puestos && p4.puestos.anexo === '4' && p4.puestos.total === 9 && p4.puestos.filas.length === 6
+  && p4.puestos.filas.map(f => `${f.puesto}:${f.plazas}`).join('|')
+    === 'Jardinero/a:2|Pintor/a:1|Albañil:1|Conserje:2|Ordenanza:2|Empleado/a administrativo/a:1',
+  `punto 4: puestos de trabajo del anexo 4, con el "Fecha:" del pie colado tras "Albañil 1" → ${JSON.stringify(p4.puestos)}`);
+comprobar(p4.puestos && p4.puestos.filas.reduce((n, f) => n + f.plazas, 0) === p4.puestos.total, 'punto 4: las plazas suman el total de la tabla');
+comprobar(!p1.puestos && !p2.puestos && !p3.puestos && !p5.puestos, 'solo el punto cuyo anexo trae la tabla lleva puestos');
 comprobar(/^Y no habiendo más asuntos que tratar/.test(acta.cierre || '') && /DOY FE\.$/.test(acta.cierre || ''), 'cierre literal, hasta "DOY FE."');
 const mdActa = actaMarkdown(acta);
 comprobar(!/Fecha: 24\/08|Número: 2026-0032|ACTA DE JUNTA DE GOBIERNO/.test(mdActa), 'el Markdown del acta no arrastra fragmentos del pie rotado');
 comprobar(/^> Por la Sra\. Concejal de Vox/m.test(mdActa), 'las intervenciones salen citadas (">"), tal cual');
+comprobar(/^\*\*Preside:\*\* Juan Cobo Ortiz/m.test(mdActa) && !/En la ciudad de Santa Fe/.test(mdActa), 'Markdown: la apertura lista solo los nombres');
+comprobar(/^\| Jardinero\/a \| 2 \|$/m.test(mdActa) && /^\| Total \| 9 \|$/m.test(mdActa), 'Markdown: tabla de puestos con su total');
+const mdLote = resumenFichasMarkdown([{ archivo: 'acta.pdf', acta }], { tipo: 'actas' });
+comprobar(!/sin interpretación/.test(mdLote), 'el resumen de actas no lleva el aviso de "sin interpretación"');
 
 console.log('\n━━━ índice del libro de decretos: no es un decreto individual ━━━');
 const indice = fichas.find(f => f.archivo.startsWith('indice-libro-decretos'));

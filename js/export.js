@@ -181,10 +181,10 @@ export function resumenFichasMarkdown(elementos, opciones = {}) {
   const soloActas = opciones.tipo ? opciones.tipo === 'actas' : (elementos.some(e => e.acta) && !elementos.some(e => e.ficha));
   L.push(`# Resumen de ${soloActas ? 'actas' : 'decretos'} — hechos objetivos`);
   L.push('');
-  L.push(soloActas
-    ? '*Lo que consta en cada acta recibida, sin interpretación. Las intervenciones van citadas tal cual. El análisis es posterior y humano.*'
-    : '*Ficha técnica de cada archivo recibido, sin interpretación. El análisis es posterior y humano.*');
-  L.push('');
+  if (!soloActas) {
+    L.push('*Ficha técnica de cada archivo recibido, sin interpretación. El análisis es posterior y humano.*');
+    L.push('');
+  }
 
   const noLeidos = elementos.filter(e => !e.ficha && !e.acta);
   L.push(`Archivos recibidos: ${elementos.length} · Analizados: ${elementos.length - noLeidos.length} · No se pudieron leer: ${noLeidos.length}`);
