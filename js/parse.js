@@ -78,7 +78,7 @@ function buscar(texto, re, grupo = 1) {
  * citados en el cuerpo, que quedan mucho más lejos (miles de caracteres, no
  * cientos, en los decretos reales contra los que se ha comprobado esto).
  */
-function datosDelPieDecreto(texto) {
+export function datosDelPieDecreto(texto) {
   const numMatch = texto.match(/\bN[uú]mero:\s*(\d{4}[-\/]\d{3,5})/i);
   if (!numMatch) return { decreto: null, fecha: null };
 

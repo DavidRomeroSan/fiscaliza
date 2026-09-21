@@ -361,12 +361,14 @@ function lineaConNegrita(docx, texto) {
   // El doble asterisco (negrita) se comprueba antes que el simple (cursiva)
   // en la propia alternativa de la regex: si no, "**negrita**" se trocearía
   // primero por sus asteriscos internos como si fueran cursiva.
-  const partes = texto.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
+  const partes = texto.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g).filter(Boolean);
   return partes.map(p => {
     const negrita = p.match(/^\*\*([^*]+)\*\*$/);
     if (negrita) return new docx.TextRun({ text: negrita[1], bold: true });
     const cursiva = p.match(/^\*([^*]+)\*$/);
     if (cursiva) return new docx.TextRun({ text: cursiva[1], italics: true });
+    const codigo = p.match(/^`([^`]+)`$/);
+    if (codigo) return new docx.TextRun(codigo[1]);
     return new docx.TextRun(p);
   });
 }
@@ -387,7 +389,7 @@ export async function markdownADocxBlob(markdown, opciones = {}) {
 
   const esLineaEspecial = (l) =>
     /^\s*$/.test(l) || /^---+\s*$/.test(l) || /^#{1,3}\s/.test(l) ||
-    /^\s*[-*]\s+/.test(l) || /^\s*\d+\.\s+/.test(l) || /^\s*\|.*\|\s*$/.test(l);
+    /^\s*[-*]\s+/.test(l) || /^\s*\d+\.\s+/.test(l) || /^\s*\|.*\|\s*$/.test(l) || /^>\s?/.test(l);
 
   while (i < lineas.length) {
     const linea = lineas[i];
@@ -411,8 +413,9 @@ export async function markdownADocxBlob(markdown, opciones = {}) {
       i++; continue;
     }
     if (/^\s*\d+\.\s+/.test(linea)) {
-      const contenido = linea.replace(/^\s*\d+\.\s+/, '');
-      hijos.push(new docx.Paragraph({ children: lineaConNegrita(docx, contenido), spacing: { after: 60 } }));
+      // Se conserva el número ("1. Aprobación…"): quitarlo dejaba el orden del
+      // día como una lista sin numerar.
+      hijos.push(new docx.Paragraph({ children: lineaConNegrita(docx, linea.trim()), indent: { left: 360 }, spacing: { after: 60 } }));
       i++; continue;
     }
 
@@ -433,6 +436,17 @@ export async function markdownADocxBlob(markdown, opciones = {}) {
       continue;
     }
 
+    if (/^>\s?/.test(linea)) {
+      // Cita literal (intervenciones, apertura y cierre de un acta).
+      hijos.push(new docx.Paragraph({
+        children: lineaConNegrita(docx, linea.replace(/^>\s?/, '')),
+        indent: { left: 360 },
+        border: { left: { style: docx.BorderStyle.SINGLE, size: 12, color: 'AAAAAA', space: 8 } },
+        spacing: { after: 120 },
+      }));
+      i++; continue;
+    }
+
     // Párrafo normal: junta las líneas seguidas hasta la próxima línea vacía
     // o especial — así un párrafo que se reparte en varias líneas no sale
     // como una fila suelta por línea.
@@ -442,7 +456,16 @@ export async function markdownADocxBlob(markdown, opciones = {}) {
       buffer.push(lineas[i]);
       i++;
     }
-    hijos.push(new docx.Paragraph({ children: lineaConNegrita(docx, buffer.join(' ')), spacing: { after: 120 } }));
+    // Dos espacios al final de línea = salto duro (Markdown): así cada campo
+    // "**Expediente:** …" queda en su línea en vez de pegado al siguiente.
+    const runs = [];
+    buffer.forEach((l, k) => {
+      runs.push(...lineaConNegrita(docx, l.trimEnd()));
+      if (k < buffer.length - 1) {
+        runs.push(/ {2,}$/.test(l) ? new docx.TextRun({ break: 1 }) : new docx.TextRun(' '));
+      }
+    });
+    hijos.push(new docx.Paragraph({ children: runs, spacing: { after: 120 } }));
   }
 
   const doc = new docx.Document({ title: opciones.titulo, sections: [{ children: hijos }] });

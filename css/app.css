@@ -407,6 +407,24 @@ body {
 .nota-privacidad + .nota-privacidad { margin-top: 9px; }
 .nota-privacidad strong { color: var(--tinta); }
 
+.tipoDoc {
+  margin: 16px 0 0;
+  padding: 10px 14px 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  background: var(--papel-panel);
+}
+.tipoDoc legend {
+  padding: 0 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+}
+.tipoDoc label { display: inline-flex; align-items: center; gap: 8px; margin-right: 22px; font-size: 14px; cursor: pointer; }
+.tipoDoc input { accent-color: var(--archivo); }
+
 .opcion-casilla {
   display: flex;
   align-items: flex-start;

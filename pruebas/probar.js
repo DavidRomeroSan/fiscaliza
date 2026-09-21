@@ -5,6 +5,9 @@ import { analizar, fmtEuro } from '../js/parse.js';
 import { evaluarDecreto, evaluarPatrones, lecturaOposicion } from '../js/rules.js';
 import { limpiar } from '../js/extract.js';
 import { fichaMarkdown } from '../js/export.js';
+import { esActa, analizarActa } from '../js/actas.js';
+import { actaMarkdown } from '../js/exportActa.js';
+import { ACTA_TEXTO } from './acta-real.js';
 
 let fallos = 0;
 const comprobar = (cond, msg) => {
@@ -305,6 +308,43 @@ comprobar(
   /^El inicio de expediente de baja de oficio en el Padrón de Habitantes de/.test(bajaPadron.resolucion || ''),
   `resolución bajo "RESUELVO" → "${bajaPadron.resolucion}"`
 );
+
+console.log('\n━━━ acta de Junta de Gobierno Local (texto real, JGL/2026/31) ━━━');
+comprobar(esActa(ACTA_TEXTO), 'se reconoce como acta');
+comprobar(!esActa(CORPUS.find(c => c.id === 'convocatoria-jgl-2026-1533').texto), 'la convocatoria de JGL NO se confunde con un acta');
+const acta = analizarActa(ACTA_TEXTO, 'acta.pdf');
+comprobar(acta.numeroActa === '2026-0032' && acta.fechaFirma === '2026-08-24', `número y fecha de firma del pie → ${acta.numeroActa} / ${acta.fechaFirma}`);
+comprobar(acta.expedienteSesion === 'JGL/2026/31' && acta.tipoSesion === 'extraordinaria' && acta.fechaSesion === '2026-08-13',
+  `sesión → ${acta.expedienteSesion} · ${acta.tipoSesion} · ${acta.fechaSesion}`);
+comprobar(/^En la ciudad de Santa Fe/.test(acta.apertura || '') && /Gema Vera\s+Baena/.test(acta.apertura || '') && !/Fecha:|Número:/.test(acta.apertura || ''),
+  'apertura literal, con la secretaria, sin fragmentos del pie colados');
+comprobar(acta.puntos.length === 5, `5 puntos: la sublista "1.- … 6.-" de un informe reproducido en el punto 5 no cuenta como puntos nuevos → ${acta.puntos.length}`);
+const [p1, p2, p3, p4, p5] = acta.puntos;
+comprobar(p2.area === 'HACIENDA Y GESTIÓN ECONÓMICA' && p2.expediente === '4827/2026' && /^Aprobación de factura con registro nº 2026\/2439/.test(p2.objeto),
+  `punto 2: área, expediente y objeto pese al pie colado en medio del título → "${p2.area}" / ${p2.expediente} / "${p2.objeto}"`);
+comprobar(p2.sentido === 'Favorable' && p2.mayoria === 'Unanimidad' && p2.votos && p2.votos.aFavor === 6 && p2.votos.enContra === 0,
+  'punto 2: sentido, mayoría y recuento de votos');
+comprobar(p2.importes.join('|') === '147.257,00 €', `punto 2: importe de la resolución → ${p2.importes.join('|')}`);
+comprobar(p1.votos === null && p1.acuerdos.length === 2 && p1.acuerdos.every(a => /ACUERDA/.test(a)), 'punto 1: sin tabla de votación, dos acuerdos literales (ACUERDA)');
+comprobar(p1.intervenciones.length === 5 && /^Por la Sra\. Concejal de Vox, Dª Silvia Enríquez Gallego, manifiesta/.test(p1.intervenciones[0]),
+  `punto 1: 5 párrafos de intervenciones, literales, empezando por la de Vox → ${p1.intervenciones.length}`);
+comprobar(/Sra\. Concejal del Grupo Municipal VOX/.test(p1.intervenciones[1]),
+  'punto 1: "…por la Sra.⏎Concejal…" no se parte en dos párrafos por el punto de la abreviatura');
+comprobar(!p1.intervenciones.some(i => /^A continuación, se somete|^El Sr\. Alcalde-Presidente pregunta/.test(i)),
+  'punto 1: el trámite (pregunta y votación) no se cuenta como intervención');
+comprobar(p2.intervenciones.length === 0 && p3.intervenciones.length === 0, 'puntos con tabla de votación y solo fundamentos: sin intervenciones inventadas');
+comprobar(p3.resolucion.length === 3 && /condiciones :$/.test(p3.resolucion[1].texto) && !/1ª/.test(p3.resolucion[1].texto),
+  `punto 3: el SEGUNDO se corta en "…siguientes condiciones :", no arrastra las 12 condiciones → "${p3.resolucion[1]?.texto}"`);
+comprobar(p3.importes.includes('627.825,64 €') && p3.importes.includes('32.542,60 €'), `punto 3: importes de la tabla de la resolución → ${p3.importes.join(' · ')}`);
+comprobar(p3.anexos.length === 3 && /^Anexo 3\. RESOLUCIÓN SOBRE AUTORIZACIÓN DE OBRAS O INSTALACIONES EN ZONAS DE PROTECCIÓN DE LAS CARRETERAS$/.test(p3.anexos[2]),
+  'punto 3: 3 anexos, el tercero (partido en dos líneas) recompuesto');
+comprobar(p4.importes.join('|') === '50.000,00 €' && p4.anexos.length === 1, `punto 4: importe y anexo → ${p4.importes.join('|')} / ${p4.anexos.length}`);
+comprobar(p5.resolucion.length === 3 && /^Excluir a las empresas ESPECT MANAGEMENT 2008 SL\. y ORBIS FESTUM SL\./.test(p5.resolucion[0].texto),
+  'punto 5: tres puntos de resolución; "PRIMERO ." con espacio antes del punto también se reconoce');
+comprobar(/^Y no habiendo más asuntos que tratar/.test(acta.cierre || '') && /DOY FE\.$/.test(acta.cierre || ''), 'cierre literal, hasta "DOY FE."');
+const mdActa = actaMarkdown(acta);
+comprobar(!/Fecha: 24\/08|Número: 2026-0032|ACTA DE JUNTA DE GOBIERNO/.test(mdActa), 'el Markdown del acta no arrastra fragmentos del pie rotado');
+comprobar(/^> Por la Sra\. Concejal de Vox/m.test(mdActa), 'las intervenciones salen citadas (">"), tal cual');
 
 console.log('\n━━━ índice del libro de decretos: no es un decreto individual ━━━');
 const indice = fichas.find(f => f.archivo.startsWith('indice-libro-decretos'));

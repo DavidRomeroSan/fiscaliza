@@ -17,6 +17,7 @@ import { extraerTexto } from './extract.js';
 import { anonimizar } from './redact.js';
 import { extraerLineas, terceros } from './lineas.js';
 import { analizar } from './parse.js';
+import { esActa, analizarActa } from './actas.js';
 import { descargar, resumenFichasMarkdown } from './export.js';
 
 // La librería docx (y su descarga desde CDN) solo se carga la primera vez
@@ -30,6 +31,7 @@ async function cargarExportDocx() {
 const $ = (sel) => document.querySelector(sel);
 let archivosSeleccionados = null;
 let tituloActual = null; // mismo texto para el nombre del archivo y el título del Word
+const tipoElegido = () => document.querySelector('input[name="tipoDoc"]:checked')?.value || null;
 
 function mostrarEstado(texto, tipo = 'trabajando') {
   const el = $('#estado');
@@ -46,7 +48,7 @@ const ocultarEstado = () => { $('#estado').hidden = true; };
  * con la casilla marcada las fichas llevan datos personales reales que no
  * deben persistir en ningún sitio más que en el documento final.
  */
-async function generarVistaPrevia(archivos, sinAnonimizar, boton) {
+async function generarVistaPrevia(archivos, sinAnonimizar, tipo, boton) {
   const lista = [...archivos].filter(f => /\.(pdf|docx|txt)$/i.test(f.name));
   if (!lista.length) {
     mostrarEstado('Ninguno de esos archivos es un PDF, DOCX o TXT.', 'error');
@@ -67,6 +69,22 @@ async function generarVistaPrevia(archivos, sinAnonimizar, boton) {
         if (escaneado || texto.length < 200) {
           throw new Error('PDF sin texto legible (posible escaneo)');
         }
+        // El tipo lo declara quien sube los archivos (decretos o actas); si el
+        // archivo es claramente del otro tipo se avisa en vez de resumirlo
+        // con las reglas equivocadas y sacar un resultado sin sentido.
+        const pareceActa = esActa(texto);
+        if (tipo === 'actas' && !pareceActa) {
+          throw new Error('No parece un acta de Junta de Gobierno Local, y has indicado que subes actas.');
+        }
+        if (tipo === 'decretos' && pareceActa) {
+          throw new Error('Parece un acta de Junta de Gobierno Local, y has indicado que subes decretos.');
+        }
+        if (tipo === 'actas') {
+          const proveedoresActa = terceros(extraerLineas(texto));
+          const anonActa = anonimizar(texto, { permitir: proveedoresActa });
+          elementos.push({ archivo: archivo.name, acta: analizarActa(sinAnonimizar ? texto : anonActa.textoAnonimo, archivo.name) });
+          continue;
+        }
         // Prescan: identificar quién factura ANTES de anonimizar. Muchos
         // proveedores del Ayuntamiento son autónomos, y borrar su nombre
         // dejaría sin datos justamente el análisis de repeticiones.
@@ -85,18 +103,18 @@ async function generarVistaPrevia(archivos, sinAnonimizar, boton) {
     // distinguir un lote de otro. Si ningún decreto tiene fecha reconocida
     // (p. ej. todos ilegibles), se usa la fecha de hoy como último recurso.
     const fechasDecretos = elementos
-      .map(e => e.ficha?.fecha)
+      .map(e => e.ficha?.fecha || e.acta?.fechaSesion)
       .filter(Boolean)
       .sort();
     const fechaHasta = fechasDecretos.length
       ? fechasDecretos[fechasDecretos.length - 1]
       : new Date().toISOString().slice(0, 10);
-    tituloActual = `Resumen_decretos_hasta_${fechaHasta}`;
-    const markdown = resumenFichasMarkdown(elementos, { anonimo: !sinAnonimizar, mostrarMandato: false });
+    tituloActual = `Resumen_${tipo}_hasta_${fechaHasta}`;
+    const markdown = resumenFichasMarkdown(elementos, { anonimo: !sinAnonimizar, mostrarMandato: false, tipo });
     $('#textoPrevia').value = markdown;
     $('#bloquePrevia').hidden = false;
 
-    const conFicha = elementos.filter(e => e.ficha).length;
+    const conFicha = elementos.filter(e => e.ficha || e.acta).length;
     mostrarEstado(
       `Listo: ${elementos.length} archivo(s) recibido(s), ${conFicha} con ficha, ${elementos.length - conFicha} sin leer. Revisa el texto de abajo antes de descargar.`);
   } catch (err) {
@@ -114,7 +132,7 @@ async function descargarWord(boton) {
   boton.textContent = 'Generando Word…';
   try {
     const { markdownADocxBlob } = await cargarExportDocx();
-    const titulo = tituloActual || `Resumen_decretos_${new Date().toISOString().slice(0, 10)}`;
+    const titulo = tituloActual || `Resumen_${tipoElegido() || 'decretos'}_${new Date().toISOString().slice(0, 10)}`;
     const blob = await markdownADocxBlob($('#textoPrevia').value, { titulo });
     descargar(`${titulo}.docx`, blob,
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -133,16 +151,26 @@ function iniciar() {
   const entrada = $('#entradaArchivos');
   const btnGenerar = $('#btnGenerarResumen');
 
+  // El botón solo se activa con archivos Y con el tipo declarado: es
+  // obligatorio decir si se suben decretos o actas, sin valor por defecto.
+  const actualizar = () => {
+    const tipo = tipoElegido();
+    btnGenerar.disabled = !archivosSeleccionados || !tipo;
+    if (!archivosSeleccionados) {
+      mostrarEstado('Ningún archivo seleccionado.', 'error');
+    } else if (!tipo) {
+      mostrarEstado(`${archivosSeleccionados.length} archivo(s) seleccionados — indica si son decretos o actas.`);
+    } else {
+      mostrarEstado(`${archivosSeleccionados.length} archivo(s) seleccionados (${tipo}) — listo para generar el resumen.`);
+    }
+  };
   const seleccionar = (archivos) => {
     archivosSeleccionados = archivos.length ? archivos : null;
-    btnGenerar.disabled = !archivosSeleccionados;
-    mostrarEstado(
-      archivosSeleccionados
-        ? `${archivosSeleccionados.length} archivo(s) seleccionados — listo para generar el resumen.`
-        : 'Ningún archivo seleccionado.',
-      archivosSeleccionados ? 'trabajando' : 'error'
-    );
+    actualizar();
   };
+  for (const r of document.querySelectorAll('input[name="tipoDoc"]')) {
+    r.addEventListener('change', () => { if (archivosSeleccionados) actualizar(); else btnGenerar.disabled = true; });
+  }
 
   zona.addEventListener('click', () => entrada.click());
   zona.addEventListener('keydown', (e) => {
@@ -163,8 +191,8 @@ function iniciar() {
   window.addEventListener('drop', (e) => e.preventDefault());
 
   btnGenerar.addEventListener('click', () => {
-    if (!archivosSeleccionados) return;
-    generarVistaPrevia(archivosSeleccionados, $('#chkSinAnonimizar').checked, btnGenerar);
+    if (!archivosSeleccionados || !tipoElegido()) return;
+    generarVistaPrevia(archivosSeleccionados, $('#chkSinAnonimizar').checked, tipoElegido(), btnGenerar);
   });
 
   $('#btnDescargarWord').addEventListener('click', (e) => descargarWord(e.currentTarget));

@@ -40,7 +40,8 @@ import { extraerLineas, terceros } from '../js/lineas.js';
 import { analizar, datosNoIncluidos, fmtEuro } from '../js/parse.js';
 import { evaluarDecreto, evaluarPatrones } from '../js/rules.js';
 import { informeConsolidadoMarkdown, resumenFichasMarkdown } from '../js/export.js';
-import { resumenFichasDocxBlob } from '../js/exportDocx.js';
+import { markdownADocxBlob } from '../js/exportDocx.js';
+import { esActa, analizarActa } from '../js/actas.js';
 
 /* ─────────── misma reconstrucción de líneas que extract.js ─────────── */
 
@@ -111,6 +112,11 @@ for (const nombre of archivos) {
       const motivo = 'PDF sin texto legible (posible escaneo)';
       fallos.push({ archivo: nombre, motivo });
       elementosPorArchivo.push({ archivo: nombre, error: motivo });
+      continue;
+    }
+
+    if (esActa(texto)) {
+      elementosPorArchivo.push({ archivo: nombre, acta: analizarActa(texto, nombre) });
       continue;
     }
 
@@ -212,6 +218,7 @@ console.log(`  → ${elementosPorArchivo.length} archivo(s) recibido(s), ${eleme
 
 // Mismo resumen, en Word — el formato que de verdad va a usar el grupo.
 const salidaDocx = join(carpeta, sinAnonimizar ? 'resumen_fichas_sin_anonimizar.docx' : 'resumen_fichas.docx');
-const blobDocx = await resumenFichasDocxBlob(elementosPorArchivo, { anonimo: !sinAnonimizar });
+// El mismo camino que la página: Markdown → Word, no un constructor aparte.
+const blobDocx = await markdownADocxBlob(resumenFichas, { titulo: 'Resumen_decretos' });
 writeFileSync(salidaDocx, Buffer.from(await blobDocx.arrayBuffer()));
 console.log(`Resumen de fichas en Word guardado en: ${salidaDocx}${sinAnonimizar ? '  (SIN anonimizar — no compartir fuera del grupo)' : ''}`);

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fiscaliza — resumen de decretos municipales</title>
-<meta name="description" content="Genera el resumen de un lote de decretos municipales en Word. Todo el procesamiento ocurre en tu navegador: ningún documento sale de tu equipo.">
+<title>Fiscaliza — resumen de decretos y actas municipales</title>
+<meta name="description" content="Genera el resumen de un lote de decretos o de actas de Junta de Gobierno Local en Word. Todo el procesamiento ocurre en tu navegador: ningún documento sale de tu equipo.">
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -12,7 +12,7 @@
 
 <header class="barra">
   <span class="barra__marca">Fiscaliza</span>
-  <span class="barra__lema">Resumen de decretos municipales</span>
+  <span class="barra__lema">Resumen de decretos y actas municipales</span>
   <span class="barra__espacio"></span>
   <img class="barra__logo" src="img/logo-santafe-psoe.png" alt="PSOE Santa Fe">
 </header>
@@ -22,11 +22,17 @@
 
     <section class="bloque">
       <div class="soltar" id="zonaSoltar" tabindex="0" role="button"
-            aria-label="Subir decretos">
-        <p class="soltar__titulo">Sube o arrastra los decretos</p>
+            aria-label="Subir decretos o actas">
+        <p class="soltar__titulo">Sube o arrastra los decretos o las actas</p>
         <p class="soltar__pie">Uno o varios · PDF · DOCX · TXT — nada sale de este equipo</p>
         <input type="file" id="entradaArchivos" multiple accept=".pdf,.docx,.txt" class="oculto-visual">
       </div>
+
+      <fieldset class="tipoDoc" id="tipoDoc">
+        <legend>¿Qué has subido?</legend>
+        <label><input type="radio" name="tipoDoc" value="decretos"> Decretos</label>
+        <label><input type="radio" name="tipoDoc" value="actas"> Actas de la Junta de Gobierno Local</label>
+      </fieldset>
 
       <label class="opcion-casilla">
         <input type="checkbox" id="chkSinAnonimizar" checked>

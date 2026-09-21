@@ -16,6 +16,7 @@
  */
 
 import { fmtEuro, datosNoIncluidos } from './parse.js';
+import { actaMarkdown } from './exportActa.js';
 
 /** El identificador por el que se puede volver a encontrar el decreto. */
 const refDecreto = (ficha) => ficha.decreto || ficha.expediente || ficha.archivo || 's/n';
@@ -41,10 +42,10 @@ export function fichaMarkdown(ficha, opciones = {}) {
   L.push(`**Tipo:** ${ficha.tipoNombre}  `);
   L.push(`**Objeto:** ${ficha.objeto || 'No consta'}  `);
   if (ficha.beneficiario) L.push(`**Beneficiario:** ${ficha.beneficiario}  `);
-  L.push(`**Fecha:** ${ficha.fecha || 'No consta'}${ficha.fechaOrigen ? ` _(${ficha.fechaOrigen})_` : ''}  `);
+  L.push(`**Fecha:** ${ficha.fecha || 'No consta'}${ficha.fechaOrigen ? ` *(${ficha.fechaOrigen})*` : ''}  `);
   L.push(`**Firmante:** ${ficha.firmante || 'No consta'}  `);
   if (mostrarMandato) {
-    L.push(`**Mandato:** ${ficha.mandato?.etiqueta || 'Sin determinar'}${ficha.mandato?.confianza && ficha.mandato.confianza !== 'alta' ? ` _(atribución: ${ficha.mandato.confianza})_` : ''}  `);
+    L.push(`**Mandato:** ${ficha.mandato?.etiqueta || 'Sin determinar'}${ficha.mandato?.confianza && ficha.mandato.confianza !== 'alta' ? ` *(atribución: ${ficha.mandato.confianza})*` : ''}  `);
   }
   L.push(`**Importe:** ${fmtEuro(ficha.importeTotal)}`);
   L.push('');
@@ -177,12 +178,15 @@ export function fichaMarkdown(ficha, opciones = {}) {
 export function resumenFichasMarkdown(elementos, opciones = {}) {
   const { mostrarMandato = false, anonimo = true } = opciones;
   const L = [];
-  L.push('# Resumen de decretos — hechos objetivos');
+  const soloActas = opciones.tipo ? opciones.tipo === 'actas' : (elementos.some(e => e.acta) && !elementos.some(e => e.ficha));
+  L.push(`# Resumen de ${soloActas ? 'actas' : 'decretos'} — hechos objetivos`);
   L.push('');
-  L.push('*Ficha técnica de cada archivo recibido, sin interpretación. El análisis es posterior y humano.*');
+  L.push(soloActas
+    ? '*Lo que consta en cada acta recibida, sin interpretación. Las intervenciones van citadas tal cual. El análisis es posterior y humano.*'
+    : '*Ficha técnica de cada archivo recibido, sin interpretación. El análisis es posterior y humano.*');
   L.push('');
 
-  const noLeidos = elementos.filter(e => !e.ficha);
+  const noLeidos = elementos.filter(e => !e.ficha && !e.acta);
   L.push(`Archivos recibidos: ${elementos.length} · Analizados: ${elementos.length - noLeidos.length} · No se pudieron leer: ${noLeidos.length}`);
   L.push('');
 
@@ -194,10 +198,10 @@ export function resumenFichasMarkdown(elementos, opciones = {}) {
   }
 
   for (const e of elementos) {
-    if (!e.ficha) continue;
+    if (!e.ficha && !e.acta) continue;
     L.push(`**Archivo:** \`${e.archivo}\``);
     L.push('');
-    L.push(fichaMarkdown(e.ficha, { mostrarMandato, anonimo }));
+    L.push(e.acta ? actaMarkdown(e.acta) : fichaMarkdown(e.ficha, { mostrarMandato, anonimo }));
     L.push('');
     L.push('---');
     L.push('');
