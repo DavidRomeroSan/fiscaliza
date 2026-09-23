@@ -309,6 +309,22 @@ comprobar(
   `resolución bajo "RESUELVO" → "${bajaPadron.resolucion}"`
 );
 
+console.log('\n━━━ propuesta de resolución de licencia de feria (2026-1597) ━━━');
+const propuesta = fichas.find(f => f.archivo.startsWith('propuesta-resolucion-licencia-feria-2026-1597'));
+comprobar(propuesta.tipo === 'licencia_actividad', `clasificada como licencia de actividad, no "General" → "${propuesta.tipo}"`);
+comprobar(propuesta.expediente === '4199/2026', `expediente de la fila del cuadro, no el PR/2026/1601 ni el 4237/2026 citado en el cuerpo → "${propuesta.expediente}"`);
+comprobar(/^Puesta en funcionamiento de puesto "Salón de juegos Conchi" para Fiestas de Santa Fe 2026 a instancia de/.test(propuesta.objeto || '') && !/Órgano Gestor/.test(propuesta.objeto),
+  `objeto: el "Asunto del Expediente" en dos líneas, sin el "Órgano Gestor" → "${propuesta.objeto}"`);
+comprobar(propuesta.firmante === 'Rubén Martínez Bermúdez', `firmante: "Órgano que Resuelve", sin cargo ni fecha → "${propuesta.firmante}"`);
+comprobar(propuesta.mandato.confianza === 'alta', `firma un concejal delegado reconocido: sin aviso de revisión → ${propuesta.mandato.confianza}`);
+comprobar(propuesta.fecha === '2026-08-27', `fecha del pie → ${propuesta.fecha}`);
+comprobar(/^Conceder a .+ LA LICENCIA DE Puesta en funcionamiento de puesto "Salón de juegos Conchi" para Fiestas de Santa Fe 2026 a instancia de .+ ambos inclusive\.$/.test(propuesta.resolucion || '')
+  && !/Fecha:|Número:|SEGUNDO|condicionada/.test(propuesta.resolucion || ''),
+  `resolución: solo el PRIMERO, con el "Fecha:" del pie colado en medio retirado → "${propuesta.resolucion}"`);
+comprobar(!/Ana Ejemplo/i.test(`${propuesta.objeto} ${propuesta.resolucion}`),
+  'anonimizado: el nombre en minúsculas ("a instancia de Ana Ejemplo García") también se sustituye');
+comprobar(!!propuesta.beneficiario, `titular de la licencia como beneficiario → "${propuesta.beneficiario}"`);
+
 console.log('\n━━━ acta de Junta de Gobierno Local (texto real, JGL/2026/31) ━━━');
 comprobar(esActa(ACTA_TEXTO), 'se reconoce como acta');
 comprobar(!esActa(CORPUS.find(c => c.id === 'convocatoria-jgl-2026-1533').texto), 'la convocatoria de JGL NO se confunde con un acta');

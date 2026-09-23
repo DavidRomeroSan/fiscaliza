@@ -229,6 +229,7 @@ export function anonimizar(texto, opciones = {}) {
   }
 
   // 2. Nombres con tratamiento (alta confianza).
+  const conTratamiento = new Set();
   out = out.replace(RE_TRATAMIENTO, (m, nombre) => {
     // La captura puede arrastrar el término que sigue al nombre
     // ("D. Juan Cobo Ortiz EXTE: 10424/2023"). Se poda por la derecha.
@@ -242,8 +243,9 @@ export function anonimizar(texto, opciones = {}) {
     if (corteT >= 2) palabras = palabras.slice(0, corteT);
     const limpio = palabras.join(' ');
     if (esCargoPublico(limpio) || esPermitido(limpio)) return m;
-    return m.slice(0, m.length - nombre.length) + marcadorPara(limpio, 'PERSONA') +
-           nombre.slice(limpio.length);
+    const marcador = marcadorPara(limpio, 'PERSONA');
+    conTratamiento.add(marcador);
+    return m.slice(0, m.length - nombre.length) + marcador + nombre.slice(limpio.length);
   });
 
   // 3. Secuencias en mayúsculas (confianza media).
@@ -278,6 +280,27 @@ export function anonimizar(texto, opciones = {}) {
     }
     return m;
   });
+
+  // 3b. Mismo nombre con otra grafía. Solo para nombres seguros (los que
+  // llevan tratamiento: "D/Dª …"), no para secuencias en mayúsculas de
+  // confianza media, que a veces arrastran palabras de la descripción.
+  // Una persona aparece en mayúsculas junto
+  // a su DNI ("D/Dª ANA EJEMPLO GARCÍA (00000000T)") y luego en minúsculas
+  // ("a instancia de Ana Ejemplo García"): el segundo caso no lo reconoce
+  // ningún patrón, pero si ya se ha sustituido el primero, se sustituye
+  // también este, sea cual sea la grafía.
+  // Solo cuando la grafía es distinta de la original y el nombre no forma parte
+  // de una secuencia más larga de palabras con mayúscula (un cargo público
+  // completo, por ejemplo, contiene nombres parciales de otro).
+  for (const { marcador, original, tipo } of mapa) {
+    if (tipo !== 'PERSONA' || !conTratamiento.has(marcador) || original.split(/\s+/).length < 2) continue;
+    const escapado = original.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+    out = out.replace(new RegExp(`(?<![\\p{L}])${escapado}(?![\\p{L}])`, 'giu'), (m, offset, todo) => {
+      if (m === original || esCargoPublico(m) || esPermitido(m)) return m;
+      if (/\p{Lu}[\p{L}.]*[ \t]$/u.test(todo.slice(0, offset)) || /^[ \t]+\p{Lu}/u.test(todo.slice(offset + m.length))) return m;
+      return marcador;
+    });
+  }
 
   // 4. Contexto sensible.
   const contextos = CONTEXTO_SENSIBLE.filter(c => c.re.test(texto)).map(c => c.etiqueta);

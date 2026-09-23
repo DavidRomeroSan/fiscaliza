@@ -166,6 +166,11 @@ const iso = (y, mth, d) =>
 
 /** Firmante real del decreto. Determina la atribución política. */
 export function extraerFirmante(texto) {
+  // "Órgano que Resuelve / Concejal Delegado D. Rubén Martínez Bermúdez. Fecha: …"
+  const organo = esPropuestaResolucion(texto)
+    ? texto.match(/^[ÓO]rgano que Resuelve[ \t]*\n[ \t]*(?:Concejal(?:a)? Delegad[oa]|Alcalde(?:sa)?(?:-Presidente)?)[ \t]+(?:D\.ª|D[ªº]\.?|D\.|Do[ñn]a|Don)[ \t]*([^\n.]{6,60}?)\.?[ \t]*(?:Fecha:|\n|$)/im)
+    : null;
+  if (organo) return organo[1].replace(/\s+/g, ' ').trim();
   const patrones = [
     /(?:DON|DOÑA|D\.|D[ªº]\.?)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?),?\s*(?:ALCALDE|ALCALDESA|PRIMER TENIENTE|CONCEJAL)/,
     // Los decretos de facturas los firma con frecuencia el concejal de Hacienda,
@@ -349,7 +354,9 @@ const TIPOS = [
     // atracciones y puestos de feria): sin esta categoría, más de 100 de
     // 135 decretos caían en "General / no clasificado" solo por no tener
     // clasificador propio, no porque el motor no supiera de qué trataban.
-    test: (t) => /procedimiento:\s*licencia (?:de actividades y espect[áa]culos p[úu]blicos|o autorizaci[óo]n urban[íi]stica)/i.test(t),
+    test: (t) => /procedimiento:\s*licencia (?:de actividades y espect[áa]culos p[úu]blicos|o autorizaci[óo]n urban[íi]stica)/i.test(t)
+      // La propuesta de resolución lleva el procedimiento en una fila de un cuadro, sin "Procedimiento:".
+      || (esPropuestaResolucion(t) && /^PR\/\d{4}\/\d+[ \t]+\d{1,6}\/\d{4}[ \t]+Licencia de Actividad/im.test(t)),
     peso: 55,
   },
   {
@@ -430,7 +437,32 @@ export function clasificar(texto, nLineas = 0) {
 
 /* ────────────────────────── extracción de campos ────────────────────────── */
 
+/**
+ * Decretos que son la "Propuesta de resolución" de una licencia de actividad
+ * (puestos y atracciones de feria): otro formato de esPublico Gestiona, sin
+ * "Expediente:" ni "Asunto:" con dos puntos. Los datos van en un cuadro:
+ *
+ *   Id. Propuesta Expediente Actividad / Procedimiento
+ *   PR/2026/1601 4199/2026 Licencia de Actividades y Espectáculos Públicos
+ *   Asunto del Expediente
+ *   Puesta en funcionamiento de puesto "…" … a instancia de …
+ *   Órgano Gestor
+ *   …
+ *   Órgano que Resuelve
+ *   Concejal Delegado D. Rubén Martínez Bermúdez. Fecha: 27/08/2026
+ *
+ * y el punto resolutivo va bajo "TEXTO DISPOSITIVO DE LA PROPUESTA DE
+ * RESOLUCIÓN" (no bajo RESOLUCIÓN/RESUELVO/DISPONGO).
+ */
+export const esPropuestaResolucion = (texto) =>
+  /^PROPUESTA DE RESOLUCI[ÓO]N[ \t]*$/m.test(texto) && /IDENTIFICACI[ÓO]N DE LA PROPUESTA/i.test(texto);
+
+const FILA_PROPUESTA = /^PR\/\d{4}\/\d+[ \t]+(\d{1,6}\/\d{4})[ \t]+(.+)$/m;
+
 export function extraerExpediente(texto) {
+  const fila = esPropuestaResolucion(texto) ? texto.match(FILA_PROPUESTA) : null;
+  if (fila) return fila[1];
+
   // "EXPTE." / "EXTE" / "EXP" son variantes reales del mismo campo — y en un
   // decreto real de sanciones de tráfico masivas ("Expte. 4809 /2026.") es
   // el ÚNICO sitio donde consta el expediente, sin "Expediente:" completo en
@@ -586,6 +618,10 @@ export function extraerProveedores(texto) {
 
 /** Objeto del decreto: el asunto declarado, o la primera frase con contenido. */
 export function extraerObjeto(texto) {
+  if (esPropuestaResolucion(texto)) {
+    const a = texto.match(/^Asunto del Expediente[ \t]*\n([\s\S]+?)\n[ \t]*[ÓO]rgano Gestor/im);
+    if (a) return a[1].replace(/\s+/g, ' ').trim();
+  }
   // "Asunto del Expediente:" es una variante real (decretos de licencias y
   // autorizaciones): con el colon opcional del patrón anterior, "Asunto" ya
   // casaba sin haber llegado al colon real, y la captura se quedaba con
@@ -638,7 +674,10 @@ export function extraerBeneficiario(texto) {
   const m = texto.match(
     /(?:a favor de|para el pago a)\s+(?:D\.?\s*\/\s*D[ªº]\.?|D[ªº]\.?|DON|DO[ÑN]A|D\.)\s*([A-ZÁÉÍÓÚÑ\[][^,.\n(]{2,80}?)(?=\s*(?:,|\.|\(|\bcon\s+(?:DNI|NIF)|\n|$))/i
   );
-  return m ? m[1].replace(/\s+/g, ' ').trim() : null;
+  if (m) return m[1].replace(/\s+/g, ' ').trim();
+  // Licencias: "Conceder a D/Dª NOMBRE (DNI) LA LICENCIA DE…" (el titular).
+  const t = texto.match(/\bConceder a\s+(?:D\.?\s*\/\s*D[ªº]\.?|D[ªº]\.?|DON|DO[ÑN]A|D\.)\s*([A-ZÁÉÍÓÚÑ\[][^,.\n(]{2,80}?)(?=\s*(?:,|\(|\bLA LICENCIA\b|\n|$))/);
+  return t ? t[1].replace(/\s+/g, ' ').trim() : null;
 }
 
 /**
@@ -705,14 +744,22 @@ export function extraerOrdenDelDia(texto) {
  * texto enorme.
  */
 export function extraerResolucion(texto) {
-  const encabezados = [...texto.matchAll(/^[ \t]*(?:RESOLUCI[ÓO]N|DISPONGO|RESUELVO)[ \t]*:?[ \t]*$/gim)];
+  const encabezados = [...texto.matchAll(/^[ \t]*(?:RESOLUCI[ÓO]N|DISPONGO|RESUELVO|TEXTO DISPOSITIVO(?: DE LA PROPUESTA DE RESOLUCI[ÓO]N)?)[ \t]*:?[ \t]*$/gim)];
   if (!encabezados.length) return null;
   const ultimo = encabezados[encabezados.length - 1];
   const inicio = ultimo.index + ultimo[0].length;
 
   const resto = texto.slice(inicio);
   const finRel = resto.search(/\n[ \t]*º?En Santa Fe|\n[ \t]*DOCUMENTO FIRMADO|\n[ \t]*EL (?:ALCALDE|CONCEJAL)|\n[ \t]*LA CONCEJAL/i);
-  const bloque = (finRel === -1 ? resto : resto.slice(0, finRel))
+  const pie = datosDelPieDecreto(texto);
+  // El pie rotado a veces queda pegado al final de una línea del cuerpo
+  // ("…LA LICENCIA Fecha: 27/08/2026 DE Puesta en funcionamiento…").
+  const sinPieEnLinea = (t) => {
+    if (pie.fecha) t = t.replace(new RegExp(`[ \\t]*\\bFecha:\\s*${pie.fecha.split('-').reverse().join('/')}`, 'g'), '');
+    if (pie.decreto) t = t.replace(new RegExp(`[ \\t]*\\bN[uú]mero:\\s*${pie.decreto}\\b`, 'g'), '');
+    return t;
+  };
+  const bloque = sinPieEnLinea(finRel === -1 ? resto : resto.slice(0, finRel))
     // Mismos fragmentos sueltos del pie de esPublico Gestiona que
     // extraerOrdenDelDia() limpia — ver datosDelPieDecreto.
     .replace(/^[ \t]*Fecha:\s*\d{1,2}\/\d{1,2}\/\d{4}[ \t]*$/gim, '')

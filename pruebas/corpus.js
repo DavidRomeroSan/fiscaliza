@@ -848,4 +848,96 @@ DECRETO 2026-1651 [Resolución PR/2026/1651 - Actuación genérica sin firma de 
 DECRETO 2026-1650 [Resolución PR/2026/1650 - Actuación genérica sin firma de propuesta] (5YKFGCS5CAWSM3DLCAPDW655E)`
 },
 
+
+{
+  id: 'propuesta-resolucion-licencia-feria-2026-1597',
+  // Decreto 2026-1597 (licencia de un puesto de feria) en el formato de
+  // "Propuesta de resolución": los datos van en un cuadro sin "Expediente:"
+  // ni "Asunto:", y el punto resolutivo bajo "TEXTO DISPOSITIVO DE LA
+  // PROPUESTA DE RESOLUCIÓN". Antes salía "General / no clasificado", sin
+  // expediente, objeto, firmante ni resolución. Hay seis así en el lote de
+  // 135. El pie rotado ("Fecha: 27/08/2026") queda pegado al final de la
+  // línea del PRIMERO, tal y como lo entrega pdf.js. Titular sustituido.
+  esperado: { tipo: 'licencia_actividad', expediente: '4199/2026' },
+  texto: `PROPUESTA DE RESOLUCIÓN
+IDENTIFICACIÓN DE LA PROPUESTA
+Id. Propuesta Expediente Actividad / Procedimiento
+PR/2026/1601 4199/2026 Licencia de Actividades y Espectáculos Públicos
+Asunto del Expediente
+Puesta en funcionamiento de puesto "Salón de juegos Conchi" para Fiestas de Santa Fe
+2026 a instancia de Ana Ejemplo García
+Órgano Gestor
+161 ACTIVIDADES (Tramitación)
+Finalidad
+Licencias de Actividad \ Autorización Puestos de Feria
+Órgano que Resuelve
+Concejal Delegado D. Rubén Martínez Bermúdez. Fecha: 27/08/2026
+De conformidad con lo establecido en el art. 175 del Real Decreto 2568/1986, de 28 de noviembre,
+por el que se aprueba el Reglamento de Organización, Funcionamiento y Régimen Jurídico de las
+Entidades Locales, y sin perjuicio de la decisión final que adopte el órgano competente, se eleva la
+siguiente propuesta de resolución,
+Número: 2026-1597
+DECRETO
+HECHOS Y FUNDAMENTOS DE DERECHO
+En relación con la solicitud presentada por D/Dª ANA EJEMPLO GARCÍA
+(00000000T) con RE 2026-E-RE-4853, para Puesta en funcionamiento de puesto "Salón de juegos
+Conchi" para Fiestas de Santa Fe 2026 a instancia de Ana Ejemplo García.
+Vista la concesión de licencia urbanística para la instalación del mismo, tal y como consta en
+procedimiento nº 4237/2026, con Resolución n.º 2026-1562 de fecha 27/08/2026.
+Vista la documentación presentada por el interesado y el informe favorable emitido por el Ingeniero
+Técnico, D. Valeriano Mata Comino, de fecha 27/08/2026, respecto a cada atracción y puesto de
+feria individualmente solicitado, tal y como consta en sus respectivos expedientes, como actividad
+recreativa ocasional conforme a la definición indicada en el EPÍGRAFE III.2.2.e) del Decreto 155
+/2018, de 31 de julio, para la puesta en marcha y funcionamiento de la actividad solicitada.
+Visto que en dicho informe se indica que la documentación presentada se ajusta a lo indicado en el
+Decreto 195/2007 de 26 de junio, por el que se establecen las condiciones generales para la
+celebración de espectáculos públicos y actividades recreativas de carácter ocasional y extraordinario.
+Consta en el expediente certificado anual de seguridad y solidez de la atracción de feria suscrito por
+el ingeniero técnico Industrial Col. Luis Cochinillo Lopez 1335 del Colegio de Ingenieros Técnicos de
+Jaén, de fecha 02 de marzo de 2026.
+De conformidad con lo establecido en el Decreto 109/2005, de 26 de abril, por el que se regulan los
+requisitos de los contratos de seguro obligatorio de responsabilidad civil en materia de Espectáculos
+Públicos y Actividades Recreativas, los artículos 6, 9, 10, 11 y concordantes de la Ley 13/1999, de
+15 de diciembre, de Espectáculos Públicos y Actividades Recreativas de Andalucía y en el que
+establece la competencia de los Ayuntamientos para el otorgamiento de autorizaciones para el
+desarrollo de este tipo de actividades, siempre y cuando cumplan las condiciones establecidas,
+además de la de inspección y control de las mismas.
+Considerando lo establecido en el Anexo I del Decreto 155/2018, de 31 de julio, por el que se
+aprueba el Catálogo de Espectáculos Públicos, Actividades Recreativas y Establecimientos Públicos
+de la Comunidad Autónoma de Andalucía y se regulan las modalidades, régimen de apertura o
+instalación y horarios de apertura y cierre, el Decreto 195/2007, de 26 de junio, por el que se
+establecen las condiciones generales para la celebración de espectáculos públicos y actividades
+recreativas de carácter ocasional y extraordinario.
+TEXTO DISPOSITIVO DE LA PROPUESTA DE RESOLUCIÓN
+PRIMERO .- Conceder a D/Dª ANA EJEMPLO GARCÍA (00000000T) LA LICENCIA Fecha: 27/08/2026
+DE Puesta en funcionamiento de puesto "Salón de juegos Conchi" para Fiestas de Santa Fe 2026 a
+instancia de Ana Ejemplo García que se celebrará durante los días 27, 28, 29 y 30 de
+agosto de 2026, ambos inclusive.
+SEGUNDO .- Dicha licencia queda condicionada a lo siguiente:
+Número: 2026-1597
+DECRETO
+1. Las actividades autorizadas serán la establecida en el punto II.11. Actividades de ocio y
+Esparcimiento, así como III.2.2.e). Atracciones de Feria, del Decreto 155/2018, de 31 de julio,
+por el que se aprueba el Catálogo de Espectáculos Públicos, Actividades Recreativas y
+Establecimientos Públicos de la Comunidad Autónoma de Andalucía.
+2. El horario de cierre al público será el establecido por el Decreto 155/2018, de 31 de julio, art. 17,
+sin que pueda superar en ningún caso las 02:00 horas.
+3. Deberá cumplir cualquier otro requisito que la legislación sobre la materia le exija.
+4. La autorización se concede sin perjuicio a terceros y salvo derecho de propiedad.
+5. Los titulares de la actividad responderán del cumplimiento de la normativa aplicable y los
+condicionantes impuestos en la autorización, así como la veracidad e integridad de la
+información aportada.
+6. El titular de la atracción de feria está obligado a que ésta sea atendida y vigilada por personal
+cualificado, de manera que los presentes en los juegos ocupen los lugares y observen las
+Normas establecidas para el buen funcionamiento, y de esta manera al estar debidamente
+informados del correcto funcionamiento de la atracción, evitar accidentes indeseables.
+TERCERO .- Que del presente se hagan las notificaciones que procedan, y al Jefe de la Policía
+Local, para la inspección y el control del desarrollo de la actividad, por la persona que esa Jefatura
+designe.
+DOCUMENTO FIRMADO ELECTRÓNICAMENTE
+Fecha: 27/08/2026
+Número: 2026-1597
+DECRETO`
+},
+
 ];
