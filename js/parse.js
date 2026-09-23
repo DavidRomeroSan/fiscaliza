@@ -98,6 +98,24 @@ export function datosDelPieDecreto(texto) {
 }
 
 /**
+ * Quita del texto los fragmentos del pie rotado de esPublico Gestiona
+ * ("Fecha: 27/08/2026", "Número: 2026-1597", "DECRETO"): itemsALineas() los
+ * intercala con las líneas del cuerpo, sueltos o pegados al final de una
+ * línea ("HE RESUELTO : Fecha: 03/09/2026"), y rompen cualquier patrón que
+ * dependa de una línea entera o de una frase seguida.
+ */
+export function sinPie(texto) {
+  const pie = datosDelPieDecreto(texto);
+  let t = texto
+    .replace(/^[ \t]*Fecha:\s*\d{1,2}\/\d{1,2}\/\d{4}[ \t]*$/gim, '')
+    .replace(/^[ \t]*N[uú]mero:\s*\d{4}[-\/]\d{3,5}[ \t]*$/gim, '')
+    .replace(/^[ \t]*DECRETO[ \t]*$/gim, '');
+  if (pie.fecha) t = t.replace(new RegExp(`[ \\t]*\\bFecha:\\s*${pie.fecha.split('-').reverse().join('/')}`, 'g'), '');
+  if (pie.decreto) t = t.replace(new RegExp(`[ \\t]*\\bN[uú]mero:\\s*${pie.decreto}\\b`, 'g'), '');
+  return t;
+}
+
+/**
  * Los decretos de Santa Fe suelen decir "a fecha de firma electrónica" y no
  * llevan fecha en el cuerpo. La fecha fiable viene de la sesión de la Junta de
  * Gobierno Local, de la propuesta de resolución o del propio ejercicio del
@@ -188,12 +206,32 @@ export function extraerFirmante(texto) {
     // decreto se quedaba sin firmante.
     /EL ALCALDE[-\s]*(?:PRESIDENTE)?\.?\s*Fdo\.?:?\s*(?:D\.)?\s*([A-ZÁÉÍÓÚÑa-záéíóúñ\s.]{6,60})/i,
     /LA ALCALDESA\s*Fdo\.?:?\s*(?:D[ªº]\.)?\s*([A-ZÁÉÍÓÚÑa-záéíóúñ\s.]{6,60})/i,
+    // "LA CONCEJAL DELEGADA DE BIENESTAR ANIMAL / Fd. Silvia Clara Enríquez Gallego":
+    // cualquier nombre de área, "Fd."/"Fdo." y género femenino.
+    /\bL[AO]S?\s+CONCEJAL(?:A)?\s+DELEGAD[OA][^\n]*\n[ \t]*Fdo?\.?:?[ \t]*(?:D[ªº]\.?|D\.)?[ \t]*([A-ZÁÉÍÓÚÑa-záéíóúñ ]{6,60})/i,
+    // Cierre con el nombre suelto y el cargo debajo, sin "Fdo.":
+    // "En Santa Fe, a fecha de firma electrónica / Juan Cobo Ortiz / Alcalde-Presidente"
+    /a fecha de firma electr[óo]nica\s*\n[ \t]*((?:D[ªº]\.?[ \t]+|D\.[ \t]+)?[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ ]{5,60}?)[ \t]*\n[ \t]*(?:Alcalde|Alcaldesa|Concejal)/i,
   ];
   for (const re of patrones) {
     const v = buscar(texto, re);
     if (v) return v.replace(/\s+/g, ' ').replace(/[.,]$/, '').trim();
   }
   return null;
+}
+
+/**
+ * Cargo con el que se firma cuando el nombre no consta en el texto ("EL
+ * ALCALDE-PRESIDENTE" seguido solo de la firma electrónica, como en las
+ * resoluciones de responsabilidad patrimonial).
+ */
+export function extraerCargoFirmante(texto) {
+  const c = [...texto.matchAll(/^[ \t]*(EL ALCALDE[-\s]*PRESIDENTE|LA ALCALDESA[-\s]*PRESIDENTA|EL ALCALDE|LA ALCALDESA|EL PRIMER TENIENTE DE ALCALDE|LA PRIMERA TENIENTE DE ALCALDE)[ \t.]*$/gim)].pop();
+  // "EL ALCALDE-PRESIDENTE" → "Alcalde-Presidente"
+  return c
+    ? c[1].replace(/^(?:EL|LA)\s+/i, '').replace(/\s+/g, ' ').toLowerCase()
+        .replace(/(^|[-\s])(\p{L})/gu, (_, sep, l) => sep + l.toUpperCase())
+    : null;
 }
 
 /**
@@ -348,6 +386,14 @@ const TIPOS = [
     peso: 50,
   },
   {
+    id: 'responsabilidad_patrimonial',
+    nombre: 'Responsabilidad patrimonial',
+    // "Procedimiento: Responsabilidad Patrimonial" en la cabecera de las
+    // resoluciones de Alcaldía que estiman o desestiman una reclamación.
+    test: (t) => /^Procedimiento:\s*Responsabilidad Patrimonial/im.test(t),
+    peso: 55,
+  },
+  {
     id: 'licencia_actividad',
     nombre: 'Licencia de actividad o autorización urbanística',
     // Es, con diferencia, el tipo más repetido del lote de 2026 (casetas,
@@ -478,6 +524,8 @@ export function extraerExpediente(texto) {
     buscar(texto, /\bExpediente\s*N?[.ºo°]*\s*:?\s*(JGL\/\d{4}\/\d{1,4})/i) ||
     buscar(texto, /\bEXPEDIENTE\s+N?[.ºo°]*\s*:?\s*(\d{1,6}\/\d{4})/i) ||
     buscar(texto, /\bExpediente\s*N?[.ºo°]*\s*:?\s*(\d{1,6}\/\d{4})/i) ||
+    // "Expediente n.º: 374 /2026": un espacio suelto antes de la barra.
+    buscar(texto.replace(/(\d)\s+\/\s*(\d{4})/g, '$1/$2'), /\bExpediente\s*N?[.ºo°]*\s*:?\s*(\d{1,6}\/\d{4})/i) ||
     (abrev ? `${abrev[1]}/${abrev[2]}` : null) ||
     buscar(texto, /(\d{1,6}\/\d{4})\s+Expediente/i)
   );
@@ -626,8 +674,21 @@ export function extraerObjeto(texto) {
   // autorizaciones): con el colon opcional del patrón anterior, "Asunto" ya
   // casaba sin haber llegado al colon real, y la captura se quedaba con
   // "del Expediente: Puesta en funcionamiento..." en vez del contenido.
-  const asunto = buscar(texto, /\bAsunto(?:\s+del\s+Expediente)?\s*:\s*([^\n]{10,200})/i);
-  if (asunto) return asunto.replace(/\s*Procedimiento\s*:.*$/i, '').trim();
+  // Un Asunto largo se parte en dos líneas ("…con Nº DE CHIP" / "941000029081799."):
+  // se une la siguiente cuando empieza por cifra o minúscula, que no puede ser
+  // el título de otro campo ni un encabezado. (Sin /i: aquí las mayúsculas cuentan.)
+  const asuntoM = texto.match(/\bAsunto(?:\s+del\s+Expediente)?\s*:\s*([^\n]{10,200})(?:\n[ \t]*([^\n]{1,80}))?/i);
+  if (asuntoM) {
+    const cont = asuntoM[2] && /^[\d\p{Ll}]/u.test(asuntoM[2].trim()) ? ` ${asuntoM[2]}` : '';
+    return `${asuntoM[1]}${cont}`.replace(/\s+/g, ' ').replace(/\s*Procedimiento\s*:.*$/i, '').trim();
+  }
+
+  // Responsabilidad patrimonial: "Visto la reclamación patrimonial interpuesta
+  // por Dª X, en la que reclama por daños y perjuicios ocasionados por caída
+  // en la vía pública, en C/ Y de esta localidad."
+  const reclamacion = sinPie(texto).replace(/\s+/g, ' ').match(
+    /reclamaci[óo]n patrimonial interpuesta por\s+(.+?)\s*,\s*en la que reclama\s+(.+?)\s*\.(?:\s|$)/i);
+  if (reclamacion) return `Reclamación patrimonial de ${reclamacion[1].trim()}, que reclama ${reclamacion[2].replace(/\s+([,.])/g, '$1').trim()}`;
 
   const concepto = buscar(texto, /en concepto de\s+[“"]?([^”"\n.]{10,200})/i);
   if (concepto) return concepto.trim();
@@ -652,7 +713,8 @@ export function extraerObjeto(texto) {
   // "a favor de" por el propio ajuste de línea del documento — no es un
   // punto y aparte — y sin colapsarlo la captura se quedaba ahí cortada.
   const aprobar = buscar(texto.replace(/\s+/g, ' '), /\bAPROBAR\s+([^\n]{10,200})/i);
-  if (aprobar) return `Aprobar ${aprobar.trim()}`;
+  // Sin la cabecera de la tabla adjunta ("Fecha Aplicación Importe Tercero…") que sigue al punto.
+  if (aprobar) return `Aprobar ${aprobar.replace(/\s+Fecha\s+Aplicaci[óo]n\b.*$/i, '').trim()}`;
 
   return null;
 }
@@ -743,28 +805,16 @@ export function extraerOrdenDelDia(texto) {
  * función para ese tipo de decreto, para no duplicarlo como un bloque de
  * texto enorme.
  */
-export function extraerResolucion(texto) {
-  const encabezados = [...texto.matchAll(/^[ \t]*(?:RESOLUCI[ÓO]N|DISPONGO|RESUELVO|TEXTO DISPOSITIVO(?: DE LA PROPUESTA DE RESOLUCI[ÓO]N)?)[ \t]*:?[ \t]*$/gim)];
+export function extraerResolucion(textoOriginal) {
+  const texto = sinPie(textoOriginal);
+  const encabezados = [...texto.matchAll(/^[ \t]*(?:RESOLUCI[ÓO]N|DISPONGO|(?:HE )?RESUELTO|RESUELVO|TEXTO DISPOSITIVO(?: DE LA PROPUESTA DE RESOLUCI[ÓO]N)?)[ \t]*:?[ \t]*$/gim)];
   if (!encabezados.length) return null;
   const ultimo = encabezados[encabezados.length - 1];
   const inicio = ultimo.index + ultimo[0].length;
 
   const resto = texto.slice(inicio);
   const finRel = resto.search(/\n[ \t]*º?En Santa Fe|\n[ \t]*DOCUMENTO FIRMADO|\n[ \t]*EL (?:ALCALDE|CONCEJAL)|\n[ \t]*LA CONCEJAL/i);
-  const pie = datosDelPieDecreto(texto);
-  // El pie rotado a veces queda pegado al final de una línea del cuerpo
-  // ("…LA LICENCIA Fecha: 27/08/2026 DE Puesta en funcionamiento…").
-  const sinPieEnLinea = (t) => {
-    if (pie.fecha) t = t.replace(new RegExp(`[ \\t]*\\bFecha:\\s*${pie.fecha.split('-').reverse().join('/')}`, 'g'), '');
-    if (pie.decreto) t = t.replace(new RegExp(`[ \\t]*\\bN[uú]mero:\\s*${pie.decreto}\\b`, 'g'), '');
-    return t;
-  };
-  const bloque = sinPieEnLinea(finRel === -1 ? resto : resto.slice(0, finRel))
-    // Mismos fragmentos sueltos del pie de esPublico Gestiona que
-    // extraerOrdenDelDia() limpia — ver datosDelPieDecreto.
-    .replace(/^[ \t]*Fecha:\s*\d{1,2}\/\d{1,2}\/\d{4}[ \t]*$/gim, '')
-    .replace(/^[ \t]*N[uú]mero:\s*\d{4}[-\/]\d{3,5}[ \t]*$/gim, '')
-    .replace(/^[ \t]*DECRETO[ \t]*$/gim, '');
+  const bloque = finRel === -1 ? resto : resto.slice(0, finRel);
 
   // "PRIMERO" cuando hay varios puntos, "ÚNICO" cuando solo se resuelve uno.
   // También se corta en una sublista "1. / 2. / 3....": en las licencias de
@@ -772,10 +822,26 @@ export function extraerResolucion(texto) {
   // siguientes:") suele llevar detrás una decena de condiciones legales
   // numeradas así — sin este límite, la "resolución" se llevaba por delante
   // todo el clausulado entero en vez de quedarse solo con lo que se decide.
-  const m = bloque.match(/(?:PRIMERO|[UÚ]NICO)\b[ \t]*[.:]*[ \t]*-?[ \t]*([\s\S]+?)(?=\n[ \t]*SEGUNDO\b|\n[ \t]*\d{1,2}\.[ \t]|$)/i);
+  let m = bloque.match(/(?:PRIMERO|[UÚ]NICO)\b[ \t]*[.:]*[ \t]*-?[ \t]*([\s\S]+?)(?=\n[ \t]*SEGUNDO\b|\n[ \t]*\d{1,2}\.[ \t]|$)/i);
+  // Algunos decretos de alcaldía numeran los puntos ("1.- Aprobar el gasto…
+  // 2.- Dar cuenta…") en vez de PRIMERO/SEGUNDO. Se toma el 1, y se corta
+  // donde empieza la tabla que le sigue o el punto 2. Solo tras "HE RESUELTO":
+  // con otras cabeceras, un "1." suelto era una lista cualquiera (datos de una
+  // persona, una tabla), no el punto resolutivo.
+  if (!m && /HE RESUELTO/i.test(ultimo[0])) m = bloque.match(/(?:^|\n)[ \t]*1[ \t]*[.\-)]+[ \t]*([\s\S]+?)(?=\n[ \t]*2[ \t]*[.\-)]|\n[ \t]*Fecha[ \t]+Aplicaci[óo]n|$)/);
   if (!m) return null;
   const punto = m[1].replace(/\s+/g, ' ').trim();
   return punto || null;
+}
+
+/**
+ * Posicionamiento de la aseguradora municipal, literal, en las resoluciones
+ * de responsabilidad patrimonial: "…se recibe el posicionamiento de la
+ * compañía aseguradora municipal BERKLEY, del tenor literal: “…”".
+ */
+export function extraerPosicionAseguradora(texto) {
+  const m = sinPie(texto).match(/tenor literal:\s*[“"]([\s\S]+?)\s*[”"]/i);
+  return m ? m[1].replace(/\s+/g, ' ').trim() : null;
 }
 
 /** Nº de expedientes de un decreto de sanciones de tráfico masivo (no hay
@@ -977,10 +1043,13 @@ export function analizar(texto, nombreArchivo = '') {
     fecha: fecha.iso,
     fechaOrigen: fecha.origen,
     firmante,
+    firmanteCargo: firmante ? null : extraerCargoFirmante(texto),
+    posicionAseguradora: clasificacion.tipo === 'responsabilidad_patrimonial' ? extraerPosicionAseguradora(texto) : null,
     mandato,
     importeTotal: totalDeclarado != null ? totalDeclarado : (sumaDeLineas > 0 ? sumaDeLineas : null),
     importes: extraerImportes(texto).slice(0, 12),
-    aplicaciones: extraerAplicaciones(texto),
+    // La relación adjunta de un decreto de alcaldía (formato E) trae la aplicación en su fila.
+    aplicaciones: [...new Set([...extraerAplicaciones(texto), ...lineas.filter(l => l.formato === 'E').map(l => l.aplicacion)])],
     proveedores: (() => {
       const dePorTercero = porTercero.map(t => ({ nombre: t.nombre || t.cif, cif: t.cif }));
       const delTexto = extraerProveedores(texto);
@@ -1019,7 +1088,11 @@ export function datosNoIncluidos(ficha) {
   if (!ficha.objeto) faltan.push('No se ha podido identificar el objeto del decreto.');
   if (ficha.importeTotal == null) faltan.push('No consta importe económico.');
   if (!ficha.fecha) faltan.push('No consta fecha (el decreto se firma electrónicamente sin fecha en el cuerpo).');
-  if (!ficha.firmante) faltan.push('No consta el firmante.');
+  if (!ficha.firmante) {
+    faltan.push(ficha.firmanteCargo
+      ? `No consta el nombre del firmante en el texto (solo el cargo: ${ficha.firmanteCargo}).`
+      : 'No consta el firmante.');
+  }
   if (!ficha.aplicaciones.length) faltan.push('No consta aplicación presupuestaria.');
   if (ficha.cuadra === false) {
     faltan.push(

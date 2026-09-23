@@ -940,4 +940,322 @@ Número: 2026-1597
 DECRETO`
 },
 
+
+{
+  id: 'resp-patrimonial-desestima-2026-1527',
+  // Decreto 2026-1527: resolución de Alcaldía de responsabilidad patrimonial
+  // (desestima). "Expediente n.º: 374 /2026" lleva un espacio antes de la barra;
+  // el firmante es solo "EL ALCALDE-PRESIDENTE", sin nombre. Reclamante sustituida.
+  esperado: { tipo: 'responsabilidad_patrimonial', expediente: '374/2026' },
+  texto: `Expediente n.º: 374 /2026
+Resolución con número y fecha establecidos al margen
+Procedimiento: Responsabilidad Patrimonial
+RESOLUCIÓN DE ALCALDÍA
+En relación con el expediente de responsabilidad patrimonial n.º 374/2026, emito la siguiente
+Resolución, de conformidad con lo establecido en el artículo 88.7 de la Ley 39/2015, de 1 de octubre,
+del Procedimiento Administrativo Común de las Administraciones Públicas, con base a los siguientes
+antecedentes:
+Documento Fecha/N.º
+Documento de inicio del Expediente: Oficio/Instancia de parte 19/01/2026
+Informe Mantenimiento 19/01/2026
+Decreto de alcaldía 19/01/2026
+Remisión de documentación aseguradora 19/02/2026
+Requerimiento de documentación 07/04/2026
+Incorporación de documentación por la interesada 13/04/2026
+Fecha: 24/08/2026
+Remisión a la aseguradora 13/04/2026
+Posicionamiento aseguradora 18/08/2026
+Propuesta de resolución órgano instructor 24/08/2026
+Visto la reclamación patrimonial interpuesta por Dª Ana Ejemplo Prueba , en la que reclama
+por daños y perjuicios ocasionados por caída en la vía pública , en C/ Ronda de Loja Norte de esta
+localidad. Número: 2026-1527
+DECRETO
+Visto que con fecha 18 / 08 /202 6 , se recibe el posicionamiento de la compañía aseguradora municipal
+BERKLEY, del tenor literal:
+“Revisada la documentación, observamos que el desnivel del acerado no era lo suficientemente
+importante como para haber producido la caída. Además, este era lo suficientemente ancho como
+para que la perjudicada hubiera podido evitar pasar por la zona.
+Por lo tanto, entendemos que el asegurado no es responsable de los daños ”
+LEGISLACIÓN APLICABLE
+La Legislación aplicable al asunto es la siguiente:
+— Los artículos 32 a 37 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público.
+— Los artículos 13, 61, 64, 65, 67, 81, 82, 86, 91 y 96 de la Ley 39/2015, de 1 de octubre, del
+Procedimiento Administrativo Común de las Administraciones Públicas.
+— El artículo 54 de la Ley 7/1985, de 3 de abril, reguladora de las Bases del Régimen Local.
+Examinada la documentación que la acompaña, vista la Propuesta de Resolución y de conformidad
+con lo establecido en artículo 21.1.s) de la Ley 7/1985, de 2 de abril, Reguladora de las Bases del
+Régimen Local,
+RESUELVO
+PRIMERO : DESESTIMAR la solicitud de responsabilidad patrimonial de Dª Encarnación Córdoba
+Heredia de conformidad con la propuesta de la compañía aseguradora municipal.
+SEGUNDO: Notificar el presente acuerdo al interesado a los efectos procedentes.
+En Santa Fe, a fecha de firma electrónica
+EL ALCALDE-PRESIDENTE
+Fecha: 24/08/2026
+Número: 2026-1527
+DECRETO`
+},
+
+{
+  id: 'resp-patrimonial-estima-2026-1526',
+  // Decreto 2026-1526: responsabilidad patrimonial que ESTIMA. El nombre del
+  // reclamante no coincide entre el antecedente y la resolución (orden de los
+  // nombres de pila cambiado), tal como en el original. Sustituido.
+  esperado: { tipo: 'responsabilidad_patrimonial', expediente: '1043/2026' },
+  texto: `Expediente n.º: 1043/2026
+Resolución con número y fecha establecidos al margen
+Procedimiento: Responsabilidad Patrimonial
+RESOLUCIÓN DE ALCALDÍA
+En relación con el expediente de responsabilidad patrimonial n.º 1043/2026, emito la siguiente
+Resolución, de conformidad con lo establecido en el artículo 88.7 de la Ley 39/2015, de 1 de octubre,
+del Procedimiento Administrativo Común de las Administraciones Públicas, con base a los siguientes
+antecedentes:
+Documento Fecha/N.º
+Documento de inicio del Expediente: Oficio/Instancia de parte 18/02/2026
+Informe Mantenimiento 18/02/2026
+Decreto de alcaldía 18/02/2026
+Remisión de documentación aseguradora 19/02/2026
+Requerimiento de documentación 07/04/2026
+Incorporación de documentación por la interesada 16/04/2026
+Remisión a la aseguradora 20/04/2026
+Fecha: 24/08/2026
+Posicionamiento aseguradora 18/08/2026
+Propuesta de resolución órgano instructor 24/08/2026
+Visto la reclamación patrimonial interpuesta por D. Nicolás Ejemplo Prueba , en la que reclama
+por daños y perjuicios ocasionados en su vehículo en la vía pública , en C/ Ullar de esta localidad.
+Visto que con fecha 18 / 08 /202 6 , se recibe el posicionamiento de la compañía aseguradora municipal
+BERKLEY, del tenor literal: Número: 2026-1526
+DECRETO
+“Revisada la documentación, entendemos que el asegurado es responsable de los daños ya que la
+calzada se encontraba en mal estado. ”
+LEGISLACIÓN APLICABLE
+La Legislación aplicable al asunto es la siguiente:
+— Los artículos 32 a 37 de la Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público.
+— Los artículos 13, 61, 64, 65, 67, 81, 82, 86, 91 y 96 de la Ley 39/2015, de 1 de octubre, del
+Procedimiento Administrativo Común de las Administraciones Públicas.
+— El artículo 54 de la Ley 7/1985, de 3 de abril, reguladora de las Bases del Régimen Local.
+Examinada la documentación que la acompaña, vista la Propuesta de Resolución y de conformidad
+con lo establecido en artículo 21.1.s) de la Ley 7/1985, de 2 de abril, Reguladora de las Bases del
+Régimen Local,
+RESUELVO
+PRIMERO : ESTIMAR el derecho de D. Ejemplo Nicolás Prueba a recibir una indemnización
+como consecuencia de los daños sufridos en sus bienes o derechos por el funcionamiento del servicio
+municipal de conformidad con la propuesta de la compañía aseguradora municipal
+SEGUNDO: Notificar el presente acuerdo al interesado a los efectos procedentes.
+En Santa Fe, a fecha de firma electrónica
+EL ALCALDE-PRESIDENTE
+Fecha: 24/08/2026
+Número: 2026-1526
+DECRETO`
+},
+
+{
+  id: 'reparo-firma-nombre-suelto-2026-1540',
+  // Decreto 2026-1540 (levantamiento de reparo): firma con el nombre suelto y
+  // el cargo debajo ("Juan Cobo Ortiz / Alcalde-Presidente"), sin "Fdo.".
+  esperado: { tipo: 'reparo', expediente: '4983/2026' },
+  texto: `Expediente. 4983/2026.
+Procedimiento. Propuesta de gasto.
+Asunto. Aprobación de factura con nº registro 2026/2229, de DELAGOS MASCOTAS,
+SL
+D. Juan Cobo Ortiz, Alcalde-Presidente, en uso de las atribuciones que me confiere la
+vigente legislación Régimen Local,
+A la vista del acuerdo adoptado por la Junta de Gobierno Local en sesión celebrada el
+25/08/2026, consistentes en:
+PROPUESTA
+PRIMERO. Autorización del gasto, disposición del crédito y reconocimiento de obligación
+por importe total de 6.166,16 € para el pago a DELAGOS MASCOTAS, S.L. (CIF B-
+Fecha: 26/08/2026
+13708821) , de la factura con registro nº2026/2229, que cuenta con el visto bueno en la
+cadena de conformidad, emitida en concepto “ ALOJAMIENTO Y ALIMENTACIÓN DE
+ANIMALES ABANDONADOS ” con cargo a la Aplicación Presupuestaria 313 2279901
+“RECOGIDA DE ANIMALES ABANDONADOS” del Presupuesto Municipal de 2026 .
+SEGUNDO. Solventar, en los términos previstos en el artículo 217 del Texto Refundido de la
+Número: 2026-1540
+DECRETO
+Ley Reguladora de Haciendas Locales, la discrepancia en base a argumentos recogidos en el
+fundamento de la propuesta.
+TERCERO. Comunicar el presente Decreto a la Oficina de Intervención y Tesorería, para
+que se dé cumplimiento del mismo.
+Visto que, por el Sr. Interventor, de conformidad con lo dispuesto en el artículo 214 del Texto
+Refundido de la Ley de Haciendas Locales, aprobado por el Real Decreto Legislativo 2/2004,
+de 5 de marzo, los artículos 16, 18 y 19 del Real Decreto 424/2017, de 28 de abril, por el que
+se regula el régimen jurídico del control interno en las entidades del Sector Público, se ha
+procedido a fiscalizar el expediente de referencia mediante la verificación de los siguientes
+requisitos:
+De conformidad con lo dispuesto en el artículo 214 del Texto Refundido de la Ley de
+Haciendas Locales, aprobado por el Real Decreto Legislativo 2/2004, de 5 de marzo, los
+artículos 16, 18 y 19 del Real Decreto 424/2017, de 28 de abril, por el que se regula el
+régimen jurídico del control interno en las entidades del Sector Público, se ha procedido a
+fiscalizar el expediente de referencia mediante la verificación de los siguientes requisitos:
+PRIMERO. - Que ante la omisión de los trámites necesarios establecidos por la ley 9/2017
+para la contratación de estas prestaciones, esta Intervención, en base al artículo 12.3 c) del
+RD 414/2017, manifiesta su desacuerdo con el fondo o con la forma del expediente
+examinado mediante reparo, que será suspensivo de la continuación del procedimiento hasta
+que se proceda a su levantamiento por el Presidente de la Entidad, conforme al artículo
+216.2.c) del TRLRHL.
+De este reparo deberá darse cuenta al Pleno de la Corporación y al Tribunal de Cuentas (art.
+218 TRLRHL).
+SEGUNDO. - Que en la factura constan los datos necesarios, siendo: identificación del
+acreedor, importe exacto de la obligación, identificación de las prestaciones, servicios u
+otras causas de las que derive la obligación del pago, y cuenta con el visto bueno en la
+cadena de conformidad.
+TERCERO. - Que los gastos u obligaciones se proponen al órgano competente. [RDCIEL Art. Fecha: 26/08/2026
+13.2.b, TRLRHL Art. 185]
+CUARTO. - Respecto de la consignación presupuestaria, existe crédito suficiente a nivel de
+aplicación en la 313 2279901 “RECOGIDA DE ANIMALES ABANDONADOS” del
+Presupuesto Municipal de 2026 .
+Número: 2026-1540
+DECRETO
+Siendo el resultado de la fiscalización DESFAVORABLE.
+Vista la motivación de levantamiento del reparo del concejal delegado de Hacienda y Gestión
+Económica, a tenor del cual:
+Con motivo de la necesidad de garantizar la adecuada gestión de los animales abandonados,
+perdidos o vagabundos dentro del término municipal, así como el cumplimiento de las
+obligaciones legales atribuidas a las entidades locales en materia de protección y bienestar
+animal, se procedió a la prestación del servicio de recogida, transporte, custodia y
+alojamiento de dichos animales, al objeto de asegurar tanto la protección de los mismos
+como la adecuada preservación de la salubridad, seguridad y convivencia ciudadana.
+Como consecuencia de la prestación efectivamente realizada, se ha presentado factura por
+importe de 6.166,16 €, IVA incluido, emitida por DELAGOS MASCOTAS, SL (B13708821),
+en concepto de servicios de recogida y alojamiento de animales abandonados.
+La actuación descrita se encuentra dentro de las competencias y obligaciones que
+corresponden a los municipios en materia de protección y bienestar animal, control de
+animales abandonados y garantía de la salud pública, de conformidad con lo dispuesto en la
+normativa estatal y autonómica de aplicación en materia de protección de los derechos y el
+bienestar de los animales, así como en la restante normativa concordante.
+Debe señalarse que los servicios han sido efectivamente realizados, constando la
+correspondiente conformidad, habiendo sido recibidos de manera satisfactoria por la
+Administración, que se ha beneficiado de los mismos, contribuyendo al cumplimiento de las
+obligaciones legales municipales relativas a la recogida, custodia y atención de animales
+abandonados.
+Asimismo, la naturaleza del servicio prestado responde a una necesidad pública esencial e
+inaplazable, dado que la ausencia de dichas actuaciones podría ocasionar situaciones de
+riesgo para los propios animales, para la salud pública, la seguridad vial y la convivencia
+ciudadana, además de suponer un incumplimiento de las obligaciones legalmente impuestas a
+esta Administración.
+Fecha: 26/08/2026
+El no reconocimiento de la obligación generaría un enriquecimiento injusto por parte de la
+Administración, al haberse producido la efectiva prestación de los servicios sin la
+correspondiente contraprestación económica.
+Número: 2026-1540
+Debe hacerse constar que por parte del Ayuntamiento se están realizando, en su caso, los DECRETO
+trabajos preparatorios necesarios para la tramitación del correspondiente procedimiento de
+contratación que permita regularizar este tipo de actuaciones conforme a los principios de
+publicidad, concurrencia y transparencia previstos en la normativa de contratación pública.
+En consecuencia, se considera suficientemente motivado el levantamiento del reparo
+formulado por la Intervención Municipal, procediendo la aprobación y reconocimiento de la
+obligación derivada de la factura emitida por DELAGOS MASCOTAS, SL (B13708821) por
+importe de 6.166,16 €, al tratarse de un gasto necesario, efectivamente realizado y vinculado
+al correcto funcionamiento de los servicios municipales y al cumplimiento de las obligaciones
+legales en materia de protección y bienestar animal, así como de control de animales
+abandonados en el municipio.
+Visto que, en base a dicha motivación se acuerda:
+ÚNICO. Presentar discrepancias en los términos previstos en el artículo 217 del texto
+refundido de la Ley Reguladora de las Haciendas Locales y solicitar del Sr. Alcalde que las
+solvente.
+RESUELVO
+ÚNICO. Solventar, en los términos previstos en el artículo 217 del texto refundido de la Ley
+Reguladora de las Hacienda Locales, la discrepancia a favor de la Junta de Gobierno, en base
+a los argumentos presentados y ordenar la continuación del expediente.
+En Santa Fe, a fecha de firma electrónica
+Juan Cobo Ortiz
+Alcalde-Presidente
+Fecha: 26/08/2026
+Número: 2026-1540
+DECRETO`
+},
+
+{
+  id: 'cesion-perro-2026-1680',
+  // Decreto 2026-1680: firma "LA CONCEJAL DELEGADA DE BIENESTAR ANIMAL / Fd.
+  // Silvia Clara Enríquez Gallego", y el Asunto se parte en dos líneas
+  // (el número de chip va en la siguiente). Particulares sustituidos.
+  esperado: { tipo: 'general', expediente: '5034/2026' },
+  texto: `Expediente 5034/2026
+Procedimiento: Solicitud de Alta, Baja o Modificación de Datos en el Registro de
+Animales.
+Asunto: Cesión Perro Abandonado ROTTWEILER con Nº DE CHIP
+941000029081799.
+DECRETO
+Visto el informe de policía con número 727/2026, relativo al perro recogido por
+Delagos el 06/08/2026, en el T.M. de Santa Fe, con microchip Nº 941000029081799,
+encontrándose perdido, siendo el propietario JOSE EJEMPLO PRUEBA, con
+domicilio en Orihuela (Valencia).
+Visto que en el mismo se informa que se han realizado todas las acciones Fecha: 01/09/2026
+posibles en cuanto a la notificación al propietario de la localización del perro en
+cuestión, siendo comunicado que el propietario ha causado baja por fallecimiento.
+Visto que en el momento de la retirada del perro estaba en posesión de ANA
+Número: 2026-1680
+DECRETO
+EJEMPLO PRUEBA, el cual manifiesta que si no aparece el dueño quiere
+quedarse con el perro.
+Teniendo en cuenta que, se han realizado las acciones posibles en cuanto a la
+notificación al propietario de la localización del perro en cuestión, y conforme al
+artículo 27, apartado 2, de la Ley 11/2003, de 24 de noviembre, de Protección de los
+Animales, y habiendo transcurrido los plazos establecidos para la recuperación del
+animal por parte del propietario, sin haberse llevado a cabo, se considera que el animal
+descrito anteriormente se considere como abandonado a todos los efectos.
+Dª Silvia Clara Enríquez Gallego, concejal delegada del área de Bienestar
+Animal del Excmo. Ayuntamiento de Santa Fe (Granada), por delegación de fecha 22
+de junio de 2023, en uso de las atribuciones que me confiere la vigente legislación de
+Régimen Local.
+RESUELVO
+Primero: Declarar formalmente en situación de abandono al animal de la
+especie canina ROTTWEILER con Nº DE CHIP 941000029081799.
+Segundo. Autorizar la cesión de la titularidad del mencionado perro a favor de
+Ana Ejemplo Prueba, con DNI 00000000T.
+Tercero: Condicionar la eficacia de la presente cesión a la obligación del nuevo
+titular de efectuar el correspondiente cambio de titularidad en el Registro Andaluz de
+Identificación Animal (RAIA) en el plazo de diez días, así como de garantizar el
+cumplimiento de las obligaciones relativas a la vacunación, cuidados, protección y
+Fecha: 01/09/2026
+bienestar del animal, de conformidad con la Ley 7/2023, de 28 de marzo, de protección
+de los derechos y el bienestar de los animales, y demás normativa aplicable.
+Cuarto.- Notificar al interesado el presente Decreto.
+Número: 2026-1680
+DECRETO
+En Santa Fe a fecha de firma electrónica
+LA CONCEJAL DELEGADA DE BIENESTAR ANIMAL
+Fd. Silvia Clara Enríquez Gallego`
+},
+
+{
+  id: 'gasto-alcaldia-relacion-adjunta-2026-1689',
+  // Decreto 2026-1689: "HE RESUELTO :" (con el "Fecha:" del pie pegado),
+  // puntos numerados 1.- / 2.-, y una relación adjunta cuyo nombre de tercero
+  // se parte en una palabra por línea (columna estrecha). Tercero sustituido.
+  // La última línea es la fila reconstruida por columnas (pdfitems.js), que
+  // extract.js añade al final de la página.
+  esperado: { tipo: 'facturas' },
+  texto: `D. JUAN COBO ORTIZ, ALCALDE-PRESIDENTE DEL EXCMO. AYUNTAMIENTO DE SANTA FE
+(GRANADA).
+DECRETO: Que en uso de las facultades que me confiere la vigente legislación del Régimen
+Local, en especial los artículos 185 del texto refundido de la Ley Reguladora de las Haciendas
+Locales aprobado por R.D.L. 2/2004 de 5 de marzo y 55 y siguientes del R.D. 500/1990, así
+como lo establecido en las Bases de Ejecución del Presupuesto, y de acuerdo con mi toma de
+posesión como Alcalde-Presidente que tuvo lugar en sesión extraordinaria de Pleno del
+Ayuntamiento el 17 de junio de 2023.
+Conocido el informe de intervención cuyo tenor es “Analizada la propuesta, la intervención
+municipal entiende que es conforme a la normativa de aplicación y por tanto no existe ningún
+inconveniente para que se adopte el acuerdo conforme a la propuesta, del presupuesto de
+2026”, si bien se tendrá que dar cuenta del presente gasto en la próxima Junta de Gobierno
+Local que se celebre
+HE RESUELTO : Fecha: 03/09/2026
+1.- Aprobar el gasto, disponer el crédito y reconocer la obligación de la relación adjunta, por
+importe total de 14.400,00 € con cargo al vigente Presupuesto Municipal.
+Fecha Aplicación Importe Tercero Nombre Ter. Texto Libre
+GALVEZ FACT. 14/2026CENA DE
+Número: 2026-1689
+DECRETO
+CORTES MAYORES SANTA FE RE:
+01/09/2026 2026 2318 226 0001 14.400,00 € 00000000T MARCOS 2026-E-RE-5863
+14.400,00 €
+2.- Dar cuenta en la siguiente Junta de Gobierno Local que se celebre.
+En Santa Fe a fecha de firma electrónica
+EL ALCALDE-PRESIDENTE
+Fdo: Juan Cobo Ortiz
+Relación adjunta (fila): 01/09/2026 | 2026 2318 226 0001 | 14.400,00 € | 00000000T | GALVEZ CORTES MARCOS | FACT. 14/2026CENA DE MAYORES SANTA FE RE: 2026-E-RE-5863`
+},
+
 ];

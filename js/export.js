@@ -43,7 +43,7 @@ export function fichaMarkdown(ficha, opciones = {}) {
   L.push(`**Objeto:** ${ficha.objeto || 'No consta'}  `);
   if (ficha.beneficiario) L.push(`**Beneficiario:** ${ficha.beneficiario}  `);
   L.push(`**Fecha:** ${ficha.fecha || 'No consta'}${ficha.fechaOrigen ? ` *(${ficha.fechaOrigen})*` : ''}  `);
-  L.push(`**Firmante:** ${ficha.firmante || 'No consta'}  `);
+  L.push(`**Firmante:** ${ficha.firmante || (ficha.firmanteCargo ? `${ficha.firmanteCargo} (el nombre no consta en el texto)` : 'No consta')}  `);
   if (mostrarMandato) {
     L.push(`**Mandato:** ${ficha.mandato?.etiqueta || 'Sin determinar'}${ficha.mandato?.confianza && ficha.mandato.confianza !== 'alta' ? ` *(atribución: ${ficha.mandato.confianza})*` : ''}  `);
   }
@@ -61,6 +61,12 @@ export function fichaMarkdown(ficha, opciones = {}) {
   // en sí (quién cobra, cuánto), no el trámite genérico de "ordenar el pago".
   if (ficha.resolucion && !ficha.nFacturas) {
     L.push(`**Resolución:** ${ficha.resolucion}`);
+    L.push('');
+  }
+  if (ficha.posicionAseguradora) {
+    L.push('**Posicionamiento de la aseguradora municipal** (literal):');
+    L.push('');
+    L.push(`> ${ficha.posicionAseguradora}`);
     L.push('');
   }
   if (ficha.totalExpedientesSancionadores != null) {

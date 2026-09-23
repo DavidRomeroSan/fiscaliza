@@ -355,6 +355,38 @@ function formatoD(lineas) {
   return out;
 }
 
+/**
+ * Formato E — relación adjunta de un decreto de alcaldía que aprueba un gasto
+ * (columnas Fecha · Aplicación · Importe · Tercero · Nombre Ter. · Texto Libre).
+ *
+ * Esa tabla parte cada celda en varias líneas y, leída por líneas, sale
+ * mezclada: no se lee del texto sino de las posiciones. pdfitems.js
+ * (relacionAdjunta) la reconstruye por columnas y deja una línea por fila:
+ *
+ *   Relación adjunta (fila): 01/09/2026 | 2026 2318 226 0001 | 14.400,00 € | 00000000T | GALVEZ CORTES MARCOS | FACT. 14/2026 …
+ */
+const RE_FILA_ADJUNTA = /^Relación adjunta \(fila\):\s*([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|(.*)$/;
+
+function formatoE(lineas) {
+  const out = [];
+  for (const linea of lineas) {
+    const m = linea.match(RE_FILA_ADJUNTA);
+    if (!m) continue;
+    const [fecha, aplicacion, importe, tercero, nombre, texto] = m.slice(1).map(x => x.trim());
+    const [ejercicio, ...partida] = aplicacion.split(/\s+/);
+    out.push({
+      importe: aNumero(importe),
+      nombre: nombre || null,
+      cif: tercero || null,
+      concepto: texto.replace(/(\d)([A-ZÁÉÍÓÚÑ]{2,})/g, '$1 $2').slice(0, 220),
+      aplicacion: partida.length ? partida.join('.') : null,
+      fecha, ejercicio,
+      formato: 'E',
+    });
+  }
+  return out;
+}
+
 /* ─────────── entrada principal ─────────── */
 
 /**
@@ -364,7 +396,7 @@ function formatoD(lineas) {
 export function extraerLineas(texto) {
   const lineas = texto.split('\n').map(l => l.trim());
 
-  let out = [...formatoC(texto), ...formatoA(lineas), ...formatoB(lineas), ...formatoD(lineas)];
+  let out = [...formatoC(texto), ...formatoA(lineas), ...formatoB(lineas), ...formatoD(lineas), ...formatoE(lineas)];
 
   // Deduplica por importe + tercero: el formato C repite la línea en PROPUESTA
   // y en RESUELVO, y contarla dos veces duplicaría el gasto.

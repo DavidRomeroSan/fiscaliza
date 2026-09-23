@@ -8,6 +8,8 @@ import { fichaMarkdown, resumenFichasMarkdown } from '../js/export.js';
 import { esActa, analizarActa } from '../js/actas.js';
 import { actaMarkdown } from '../js/exportActa.js';
 import { ACTA_TEXTO } from './acta-real.js';
+import { FILAS_1690, FILAS_1683, FILAS_1689 } from './tabla-adjunta-real.js';
+import { relacionAdjunta } from '../js/pdfitems.js';
 
 let fallos = 0;
 const comprobar = (cond, msg) => {
@@ -324,6 +326,48 @@ comprobar(/^Conceder a .+ LA LICENCIA DE Puesta en funcionamiento de puesto "Sal
 comprobar(!/Ana Ejemplo/i.test(`${propuesta.objeto} ${propuesta.resolucion}`),
   'anonimizado: el nombre en minúsculas ("a instancia de Ana Ejemplo García") también se sustituye');
 comprobar(!!propuesta.beneficiario, `titular de la licencia como beneficiario → "${propuesta.beneficiario}"`);
+
+console.log('\n━━━ otras plantillas: responsabilidad patrimonial, firma sin "Fdo.", asunto en dos líneas, gasto de alcaldía ━━━');
+const ficha1527 = fichas.find(f => f.archivo.startsWith('resp-patrimonial-desestima-2026-1527'));
+const ficha1526 = fichas.find(f => f.archivo.startsWith('resp-patrimonial-estima-2026-1526'));
+comprobar(ficha1527.tipo === 'responsabilidad_patrimonial' && ficha1527.expediente === '374/2026',
+  `responsabilidad patrimonial; "374 /2026" con espacio se lee como 374/2026 → ${ficha1527.tipo} / ${ficha1527.expediente}`);
+comprobar(/^Reclamación patrimonial de Dª .+, que reclama por daños y perjuicios ocasionados por caída en la vía pública, en C\/ Ronda de Loja Norte de esta localidad$/.test(ficha1527.objeto || ''),
+  `objeto: la reclamación, con el "Número:/DECRETO" del pie retirado de en medio → "${ficha1527.objeto}"`);
+comprobar(ficha1527.firmante === null && ficha1527.firmanteCargo === 'Alcalde-Presidente',
+  `sin nombre de firmante: se da el cargo, no se inventa el nombre → ${ficha1527.firmante} / ${ficha1527.firmanteCargo}`);
+comprobar(/^> Revisada la documentación, observamos/m.test(fichaMarkdown(ficha1527)) && /desestim/i.test(ficha1527.resolucion),
+  'posicionamiento de la aseguradora citado literal; resolución que desestima');
+comprobar(/^ESTIMAR el derecho de/.test(ficha1526.resolucion || '') && /calzada se encontraba en mal estado\.$/.test(ficha1526.posicionAseguradora || ''),
+  `1526: resolución que estima y posicionamiento completo (con el pie de por medio) → "${ficha1526.posicionAseguradora}"`);
+const ficha1540 = fichas.find(f => f.archivo.startsWith('reparo-firma-nombre-suelto-2026-1540'));
+comprobar(ficha1540.firmante === 'Juan Cobo Ortiz', `firmante con el nombre suelto sobre el cargo, sin "Fdo." → "${ficha1540.firmante}"`);
+const ficha1680 = fichas.find(f => f.archivo.startsWith('cesion-perro-2026-1680'));
+comprobar(ficha1680.firmante === 'Silvia Clara Enríquez Gallego', `firmante tras "LA CONCEJAL DELEGADA DE BIENESTAR ANIMAL / Fd." → "${ficha1680.firmante}"`);
+comprobar(/CHIP 941000029081799\.?$/.test(ficha1680.objeto || ''), `asunto partido en dos líneas: el número de chip no se pierde → "${ficha1680.objeto}"`);
+const ficha1689 = fichas.find(f => f.archivo.startsWith('gasto-alcaldia-relacion-adjunta-2026-1689'));
+comprobar(/^Aprobar el gasto, disponer el crédito y reconocer la obligación de la relación adjunta, por importe total de 14\.400,00 € con cargo al vigente Presupuesto Municipal\.$/.test(ficha1689.resolucion || ''),
+  `"HE RESUELTO :" con el "Fecha:" pegado; se toma el punto 1.- y no el "2.- Dar cuenta" → "${ficha1689.resolucion}"`);
+comprobar(!/Nombre Ter/.test(ficha1689.objeto || ''), 'objeto sin la cabecera de la tabla adjunta');
+const filas1689 = analizar(CORPUS.find(c => c.id === 'gasto-alcaldia-relacion-adjunta-2026-1689').texto, 'x.pdf').lineas;
+comprobar(filas1689.length === 1 && filas1689[0].nombre === 'GALVEZ CORTES MARCOS' && filas1689[0].cif === '00000000T' && filas1689[0].importe === 14400 && filas1689[0].aplicacion === '2318.226.0001',
+  `relación adjunta → línea de factura: ${JSON.stringify(filas1689.map(l => [l.nombre, l.cif, l.importe, l.aplicacion]))}`);
+comprobar(/^FACT\. 14\/2026 CENA DE MAYORES SANTA FE RE: 2026-E-RE-5863$/.test(filas1689[0].concepto), `… con su texto libre: "${filas1689[0].concepto}"`);
+comprobar(ficha1689.nFacturas === 1 && ficha1689.cuadra === true, `1 línea que cuadra con el total declarado → ${ficha1689.nFacturas} / ${ficha1689.cuadra}`);
+
+console.log('\n━━━ relación adjunta leída por columnas (posiciones reales de pdf.js) ━━━');
+const r1690 = relacionAdjunta(FILAS_1690);
+comprobar(r1690.length === 2, `1690 (celdas alineadas abajo): dos filas, no una mezcla → ${r1690.length}`);
+comprobar(/\| 03\/09\/2026 \| 2026 9200 23020 \| 1\.420,86 € \| 00000000T \| COBO ORTIZ JUAN \| DIETA ENTERA Y BILLETES AVION VIAJE INSTITUCIONAL A ITALIA \(PUEB\. HERMANO PIANEZZA\) DIAS 18\/09 AL 22\/09, EXPTE\. 211\/2026$/.test(r1690[0].replace('fila): ', 'fila): | ')),
+  `1690 fila 1: fecha partida recompuesta, nombre y texto libre → ${r1690[0]}`);
+comprobar(/1\.117,90 € \| 11111111H \| LOPEZ CARREÑO ANGEL \| DIETA ENTERA VIAJE/.test(r1690[1]), `1690 fila 2: el nombre en dos líneas (apellidos arriba, nombre abajo) → ${r1690[1].slice(0, 120)}`);
+const r1683 = relacionAdjunta(FILAS_1683);
+comprobar(r1683.length === 1 && /02\/09\/2026 \| 2026 9200 16200 \| 332,02 \| P1808900C \| AYUNTAMIENTO DE GRANADA \| DIF\. POLICIA LOCAL- CURSO TIPO A, ALUMNOS D\. ANA MARIA EJEMPLO PRUEBA Y D\. JOSE LUIS OTRO PRUEBA\. EXPTE\. 5019\/2026$/.test(r1683[0]),
+  `1683 (celdas alineadas arriba): texto libre de 8 líneas, sin el párrafo que sigue a la tabla → ${r1683[0]}`);
+const r1689 = relacionAdjunta(FILAS_1689);
+comprobar(r1689.length === 1 && /01\/09\/2026 \| 2026 2318 226 0001 \| 14\.400,00 € \| 00000000T \| GALVEZ CORTES MARCOS \|/.test(r1689[0]) && !/Dar cuenta/.test(r1689[0]),
+  `1689: el total suelto y el punto 2.- del RESUELVO no entran en la fila → ${r1689[0]}`);
+comprobar(relacionAdjunta([]).length === 0, 'sin cabecera de tabla no devuelve nada');
 
 console.log('\n━━━ acta de Junta de Gobierno Local (texto real, JGL/2026/31) ━━━');
 comprobar(esActa(ACTA_TEXTO), 'se reconoce como acta');

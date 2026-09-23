@@ -42,23 +42,9 @@ import { evaluarDecreto, evaluarPatrones } from '../js/rules.js';
 import { informeConsolidadoMarkdown, resumenFichasMarkdown } from '../js/export.js';
 import { markdownADocxBlob } from '../js/exportDocx.js';
 import { esActa, analizarActa } from '../js/actas.js';
+import { itemsALineas, relacionAdjunta } from '../js/pdfitems.js';
 
-/* ─────────── misma reconstrucción de líneas que extract.js ─────────── */
-
-function itemsALineas(items) {
-  const filas = new Map();
-  for (const it of items) {
-    if (!it.str || !it.str.trim()) continue;
-    const y = Math.round(it.transform[5]);
-    const clave = Math.round(y / 3) * 3;
-    if (!filas.has(clave)) filas.set(clave, []);
-    filas.get(clave).push({ x: it.transform[4], s: it.str });
-  }
-  return [...filas.entries()]
-    .sort((a, b) => b[0] - a[0])
-    .map(([, frags]) => frags.sort((a, b) => a.x - b.x).map(f => f.s).join(' ').replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
-}
+/* ─────────── misma reconstrucción de líneas que extract.js (js/pdfitems.js) ─────────── */
 
 function limpiar(texto) {
   return texto
@@ -80,7 +66,7 @@ async function textoDePdf(buffer) {
   for (let n = 1; n <= doc.numPages; n++) {
     const pagina = await doc.getPage(n);
     const contenido = await pagina.getTextContent();
-    const lineas = itemsALineas(contenido.items);
+    const lineas = [...itemsALineas(contenido.items), ...relacionAdjunta(contenido.items)];
     caracteres += lineas.join('').length;
     paginas.push(lineas.join('\n'));
   }

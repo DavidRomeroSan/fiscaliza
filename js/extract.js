@@ -6,6 +6,7 @@
  */
 
 import { MUNICIPIO } from './config.js';
+import { itemsALineas, relacionAdjunta } from './pdfitems.js';
 
 const PDFJS_SRC = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
 const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
@@ -34,29 +35,6 @@ function cargarMammoth() {
   return mammothReady;
 }
 
-/**
- * Reconstruye líneas a partir de los items de texto de pdf.js.
- * pdf.js devuelve fragmentos sueltos con coordenadas; sin reagrupar por
- * posición vertical, las tablas de los decretos de pagos se convierten en
- * papilla y los importes se despegan de su proveedor.
- */
-function itemsALineas(items) {
-  const filas = new Map();
-  for (const it of items) {
-    if (!it.str || !it.str.trim()) continue;
-    const y = Math.round(it.transform[5]);          // posición vertical
-    const clave = Math.round(y / 3) * 3;            // tolerancia de 3pt
-    if (!filas.has(clave)) filas.set(clave, []);
-    filas.get(clave).push({ x: it.transform[4], s: it.str });
-  }
-  return [...filas.entries()]
-    .sort((a, b) => b[0] - a[0])                    // de arriba a abajo
-    .map(([, frags]) =>
-      frags.sort((a, b) => a.x - b.x).map(f => f.s).join(' ').replace(/\s+/g, ' ').trim()
-    )
-    .filter(Boolean);
-}
-
 async function textoDePdf(buffer) {
   const pdfjs = await cargarPdfJs();
   const doc = await pdfjs.getDocument({ data: buffer, useSystemFonts: true }).promise;
@@ -66,7 +44,8 @@ async function textoDePdf(buffer) {
   for (let n = 1; n <= doc.numPages; n++) {
     const pagina = await doc.getPage(n);
     const contenido = await pagina.getTextContent();
-    const lineas = itemsALineas(contenido.items);
+    // Una tabla de celdas partidas (relación adjunta de un gasto) se lee por columnas y se añade al final de la página.
+    const lineas = [...itemsALineas(contenido.items), ...relacionAdjunta(contenido.items)];
     caracteres += lineas.join('').length;
     paginas.push(lineas.join('\n'));
   }
