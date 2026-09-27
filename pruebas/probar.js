@@ -139,9 +139,9 @@ const cd = gil.porTercero.find(t => /CD CIUDAD DE SANTA FE/i.test(t.nombre || ''
 comprobar(cd && cd.nFacturas === 3, `CD Ciudad de Santa Fe agrupado en 3 facturas → ${cd?.nFacturas}`);
 comprobar(!gil.lineas.some(l => /GIL CORRAL/i.test(l.nombre || '') && l.tipo === 'proveedor'),
   'el kilometraje del alcalde NO se cuenta como proveedor (tipo dieta)');
-comprobar(gil.lineas.some(l => l.tipo === 'devolucion' && /GARCIA JIMENEZ/i.test(l.nombre || '')),
+comprobar(gil.lineas.some(l => l.tipo === 'devolucion' && /EJEMPLO RUIZ/i.test(l.nombre || '')),
   'la devolución de fianza se clasifica como devolución, no como proveedor');
-comprobar(!gil.porTercero.some(t => /GARCIA JIMENEZ|AGENCIA ESTATAL/i.test(t.nombre || '')),
+comprobar(!gil.porTercero.some(t => /EJEMPLO RUIZ|AGENCIA ESTATAL/i.test(t.nombre || '')),
   'ni la devolución ni el IRPF entran en el ranking de proveedores');
 const totalGil = gil.porTercero.reduce((a, t) => a + t.importe, 0);
 comprobar(Math.abs(totalGil - 17303.50) < 0.5, `suma de proveedores reales (deportes) ≈ 17.303,50 € → ${totalGil.toFixed(2)}`);
@@ -168,7 +168,7 @@ comprobar(!renta.porTercero.length, 'la beneficiaria de la pensión NO se cuenta
 comprobar(!!renta.beneficiario, `beneficiario detectado (sobre texto ya anonimizado, así que es un marcador, no el nombre) → "${renta.beneficiario}"`);
 const provRenta = terceros(extraerLineas(CORPUS.find(c => c.id === 'renta-vitalicia').texto));
 const anonRenta = anonimizar(CORPUS.find(c => c.id === 'renta-vitalicia').texto, { permitir: provRenta });
-comprobar(!/FRANCISCA EJEMPLO LARA|FRANCISCA ALVAREZ SANCHEZ/i.test(anonRenta.textoAnonimo), 'el nombre de la beneficiaria fallecida queda anonimizado');
+comprobar(!/FRANCISCA EJEMPLO LARA/i.test(anonRenta.textoAnonimo), 'el nombre de la beneficiaria fallecida queda anonimizado');
 comprobar(!/00000002B/.test(anonRenta.textoAnonimo), 'su NIF queda anonimizado');
 comprobar(anonRenta.contextos.some(c => /pensión/i.test(c)), 'se marca el contexto sensible de pensión/defunción');
 
