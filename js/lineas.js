@@ -82,11 +82,14 @@ const CONCEPTO_DEVOLUCION =
 const CONCEPTO_TRIBUTO =
   /\b(modelo\s*1\d{2}\b|\bIRPF\b|\bTGSS\b|tesorer[íi]a general (?:de la )?seguridad social|seguridad social|agencia (?:estatal )?tributaria|retenci[óo]n (?:de )?(?:IRPF|impuestos))\b/i;
 
-export function clasificarLinea(concepto = '') {
+export function clasificarLinea(concepto = '', nombre = '') {
   if (CONCEPTO_AYUDA.test(concepto)) return 'ayuda';
   if (CONCEPTO_DEVOLUCION.test(concepto)) return 'devolucion';
   if (CONCEPTO_TRIBUTO.test(concepto)) return 'tributo';
-  if (CONCEPTO_DIETA.test(concepto)) return 'dieta';
+  // "Desplazamiento" también es el desplazamiento a domicilio de un técnico
+  // en la factura de un proveedor, no solo la dieta de un cargo público: una
+  // razón social de por medio descarta la dieta.
+  if (CONCEPTO_DIETA.test(concepto) && !SUFIJO_SOCIETARIO.test(nombre)) return 'dieta';
   return 'proveedor';
 }
 
@@ -387,6 +390,96 @@ function formatoE(lineas) {
   return out;
 }
 
+/**
+ * Formato F — relación de pagos ordenados (columnas Nombre Ter. · Texto
+ * Libre · Saldo · Importe Líquido, sin CIF). pdfitems.js (leerTablasMultiPagina)
+ * ya la reconstruye por columnas a lo largo de todas las páginas del decreto:
+ *
+ *   Pagos por nombre (fila): ACISA | CONTRATO DE MANTENIMIENTO… | 287,23
+ */
+const RE_FILA_PAGOS = /^Pagos por nombre \(fila\):\s*([^|]*)\|([^|]*)\|(.*)$/;
+
+function formatoF(lineas) {
+  const out = [];
+  for (const linea of lineas) {
+    const m = linea.match(RE_FILA_PAGOS);
+    if (!m) continue;
+    const [nombre, concepto, importe] = m.slice(1).map(x => x.trim());
+    // Sin un nombre de tercero plausible, la fila es un resto de la
+    // cabecera o del cierre del decreto (el total, la firma…), no un pago:
+    // se descarta entera, no solo el nombre — su importe no debe sumarse.
+    if (!pareceTercero(nombre)) continue;
+    out.push({
+      importe: aNumero(importe),
+      nombre: limpiarTercero(nombre),
+      cif: null,
+      concepto: concepto.slice(0, 220),
+      aplicacion: null,
+      formato: 'F',
+    });
+  }
+  return out;
+}
+
+/**
+ * Formato G — pago de seguros sociales (variante de la ordenación de pagos
+ * por operación, con el NIF de la Tesorería General y el nombre partido en
+ * varias líneas apiladas sobre la línea con el importe, no debajo).
+ *
+ *   Seguros sociales (fila): 27.939,96 | Q1819002E | TESORERIA GENERAL… | SEGUROS SOCIALES…
+ */
+const RE_FILA_SEGUROS = /^Seguros sociales \(fila\):\s*([^|]*)\|([^|]*)\|([^|]*)\|(.*)$/;
+
+function formatoG(lineas) {
+  const out = [];
+  for (const linea of lineas) {
+    const m = linea.match(RE_FILA_SEGUROS);
+    if (!m) continue;
+    const [importe, cif, nombre, concepto] = m.slice(1).map(x => x.trim());
+    out.push({
+      importe: aNumero(importe),
+      nombre: nombre || null,
+      cif: cif || null,
+      concepto: concepto.slice(0, 220),
+      aplicacion: null,
+      formato: 'G',
+    });
+  }
+  return out;
+}
+
+/**
+ * Formato H — aprobación de facturas por número de registro (columnas
+ * Número de Registro · Tercero · Importe · Programa · Económica ·
+ * Descripción), con las columnas estrechas (Programa, Económica, y a veces
+ * el propio Tercero) justificadas letra a letra o dígito a dígito.
+ *
+ *   Facturas por registro (fila): 2026 /2653 | ATHISA ANDALUZA… | 387,20 | Desratización…
+ */
+const RE_FILA_REGISTRO = /^Facturas por registro \(fila\):\s*([^|]*)\|([^|]*)\|([^|]*)\|(.*)$/;
+
+function formatoH(lineas) {
+  const out = [];
+  for (const linea of lineas) {
+    const m = linea.match(RE_FILA_REGISTRO);
+    if (!m) continue;
+    const [registro, nombre, importe, concepto] = m.slice(1).map(x => x.trim());
+    // Un registro sin la barra ("2026" a secas, sin "/NNNN") es un resto de
+    // fila mal recompuesta: sin dato fiable que lo respalde, se descarta.
+    if (!/^\d{4}\s*\/\s*\d+/.test(registro) || !pareceTercero(nombre)) continue;
+    out.push({
+      importe: aNumero(importe),
+      nombre: limpiarTercero(nombre),
+      cif: null,
+      concepto: concepto.slice(0, 220),
+      aplicacion: null,
+      registro: registro.replace(/\s+/g, ''),
+      formato: 'H',
+    });
+  }
+  return out;
+}
+
 /* ─────────── entrada principal ─────────── */
 
 /**
@@ -396,7 +489,8 @@ function formatoE(lineas) {
 export function extraerLineas(texto) {
   const lineas = texto.split('\n').map(l => l.trim());
 
-  let out = [...formatoC(texto), ...formatoA(lineas), ...formatoB(lineas), ...formatoD(lineas), ...formatoE(lineas)];
+  let out = [...formatoC(texto), ...formatoA(lineas), ...formatoB(lineas), ...formatoD(lineas), ...formatoE(lineas),
+    ...formatoF(lineas), ...formatoG(lineas), ...formatoH(lineas)];
 
   // Deduplica por importe + tercero: el formato C repite la línea en PROPUESTA
   // y en RESUELVO, y contarla dos veces duplicaría el gasto.
@@ -409,7 +503,7 @@ export function extraerLineas(texto) {
     return true;
   });
 
-  return out.map(l => ({ ...l, tipo: clasificarLinea(`${l.concepto || ''} ${l.nombre || ''}`) }));
+  return out.map(l => ({ ...l, tipo: clasificarLinea(`${l.concepto || ''} ${l.nombre || ''}`, l.nombre) }));
 }
 
 /** Agrupa las líneas por tercero. Es lo que alimenta la detección de repeticiones. */

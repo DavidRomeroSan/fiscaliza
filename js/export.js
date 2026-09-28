@@ -24,7 +24,7 @@ const refDecreto = (ficha) => ficha.decreto || ficha.expediente || ficha.archivo
 /* ─────────── ficha técnica (neutra, por decreto) ─────────── */
 
 export function fichaMarkdown(ficha, opciones = {}) {
-  const { anonimo = true, mostrarMandato = true } = opciones;
+  const { mostrarMandato = true } = opciones;
   const L = [];
 
   if (ficha.tipo === 'indice') {
@@ -95,10 +95,12 @@ export function fichaMarkdown(ficha, opciones = {}) {
       L.push(`| ${t.nombre || t.cif || '—'}${t.cif && t.nombre ? ` (${t.cif})` : ''} | ${t.nFacturas} | ${fmtEuro(t.importe)} | ${pct.toFixed(0)} % |`);
     }
     L.push('');
-    if (ficha.mayores?.length > 1) {
-      L.push('**Facturas de mayor cuantía**');
+    const proveedorLineas = (ficha.lineas || []).filter(l => l.tipo === 'proveedor' && l.importe > 0)
+      .sort((a, b) => b.importe - a.importe);
+    if (proveedorLineas.length > 1) {
+      L.push(`**Todos los pagos** (${proveedorLineas.length}, de mayor a menor importe)`);
       L.push('');
-      for (const l of ficha.mayores) {
+      for (const l of proveedorLineas) {
         L.push(`- **${fmtEuro(l.importe)}** — ${l.nombre || l.cif || 'tercero no identificado'}` +
           (l.concepto ? `. ${l.concepto.slice(0, 160)}` : '') +
           (l.aplicacion ? ` *(${l.aplicacion})*` : ''));
@@ -112,6 +114,26 @@ export function fichaMarkdown(ficha, opciones = {}) {
     L.push('**Terceros identificados:**');
     for (const p of ficha.proveedores) {
       L.push(`- ${p.nombre}${p.cif ? ` (${p.cif})` : ''}`);
+    }
+    L.push('');
+  }
+
+  // Ayudas, dietas, tributos y devoluciones quedan fuera de "Relación de
+  // facturas" a propósito (no son proveedores recurrentes que fiscalizar),
+  // pero siguen siendo pagos con nombre, concepto e importe que el decreto
+  // recoge, y el resumen no debe callarlos.
+  const ETIQUETA_TIPO = {
+    ayuda: 'Ayudas y prestaciones sociales', dieta: 'Dietas y asistencias',
+    tributo: 'Pagos a la Seguridad Social o la Agencia Tributaria', devolucion: 'Devoluciones a particulares',
+  };
+  for (const [tipo, etiqueta] of Object.entries(ETIQUETA_TIPO)) {
+    const deEsteTipo = (ficha.lineas || []).filter(l => l.tipo === tipo && l.importe > 0);
+    if (!deEsteTipo.length) continue;
+    L.push(`**${etiqueta}** (${deEsteTipo.length}):`);
+    L.push('');
+    for (const l of deEsteTipo) {
+      L.push(`- **${fmtEuro(l.importe)}** — ${l.nombre || l.cif || 'sin identificar'}` +
+        (l.concepto ? `. ${l.concepto.slice(0, 160)}` : ''));
     }
     L.push('');
   }
@@ -152,12 +174,6 @@ export function fichaMarkdown(ficha, opciones = {}) {
     L.push('');
   }
 
-  L.push('---');
-  L.push(`*Generado el ${new Date().toLocaleDateString('es-ES')}. Documento de trabajo interno.*`);
-  L.push(anonimo
-    ? '*Los datos personales de particulares han sido sustituidos por marcadores. Revísalo antes de compartir.*'
-    : '*Contiene datos personales SIN anonimizar (nombres, DNI de particulares). No lo compartas fuera del grupo municipal.*');
-
   return L.join('\n');
 }
 
@@ -194,6 +210,12 @@ export function resumenFichasMarkdown(elementos, opciones = {}) {
 
   const noLeidos = elementos.filter(e => !e.ficha && !e.acta);
   L.push(`Archivos recibidos: ${elementos.length} · Analizados: ${elementos.length - noLeidos.length} · No se pudieron leer: ${noLeidos.length}`);
+  L.push('');
+  // Una sola vez para todo el lote, no repetida en cada ficha: con 135
+  // decretos, el mismo aviso 135 veces no informa, solo estorba.
+  L.push(`*Generado el ${new Date().toLocaleDateString('es-ES')}. Documento de trabajo interno.* ` + (anonimo
+    ? '*Los datos personales de particulares han sido sustituidos por marcadores. Revísalo antes de compartir.*'
+    : '*Contiene datos personales SIN anonimizar (nombres, DNI de particulares). No lo compartas fuera del grupo municipal.*'));
   L.push('');
 
   if (noLeidos.length) {

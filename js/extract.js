@@ -6,7 +6,7 @@
  */
 
 import { MUNICIPIO } from './config.js';
-import { itemsALineas, relacionAdjunta } from './pdfitems.js';
+import { itemsALineas, relacionAdjunta, leerTablasMultiPagina } from './pdfitems.js';
 
 const PDFJS_SRC = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
 const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
@@ -38,17 +38,27 @@ function cargarMammoth() {
 async function textoDePdf(buffer) {
   const pdfjs = await cargarPdfJs();
   const doc = await pdfjs.getDocument({ data: buffer, useSystemFonts: true }).promise;
-  const paginas = [];
-  let caracteres = 0;
-
+  const itemsPorPagina = [];
   for (let n = 1; n <= doc.numPages; n++) {
     const pagina = await doc.getPage(n);
-    const contenido = await pagina.getTextContent();
-    // Una tabla de celdas partidas (relación adjunta de un gasto) se lee por columnas y se añade al final de la página.
-    const lineas = [...itemsALineas(contenido.items), ...relacionAdjunta(contenido.items)];
-    caracteres += lineas.join('').length;
-    paginas.push(lineas.join('\n'));
+    itemsPorPagina.push((await pagina.getTextContent()).items);
   }
+
+  // Las tablas de varias páginas (relación de pagos, seguros sociales,
+  // facturas por registro) solo llevan cabecera en la primera: hay que leer
+  // todas las páginas juntas, no una por una. Cuando encaja alguna, sustituye
+  // a relacionAdjunta() para esas páginas — las cabeceras de una y otra se
+  // solapan ("Tercero", "Nombre Ter.", "Texto Libre"...) y sin esto la misma
+  // fila se cuela dos veces, una por cada lector.
+  const tablaMultiPagina = leerTablasMultiPagina(itemsPorPagina);
+  let caracteres = 0;
+  const paginas = itemsPorPagina.map((items) => {
+    // Una tabla de celdas partidas (relación adjunta de un gasto) se lee por columnas y se añade al final de la página.
+    const lineas = [...itemsALineas(items), ...(tablaMultiPagina.length ? [] : relacionAdjunta(items))];
+    caracteres += lineas.join('').length;
+    return lineas.join('\n');
+  });
+  paginas.push(tablaMultiPagina.join('\n'));
 
   // Heurística de PDF escaneado: muchas páginas, casi ningún carácter.
   const escaneado = caracteres < doc.numPages * 120;

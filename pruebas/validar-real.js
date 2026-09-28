@@ -42,7 +42,7 @@ import { evaluarDecreto, evaluarPatrones } from '../js/rules.js';
 import { informeConsolidadoMarkdown, resumenFichasMarkdown } from '../js/export.js';
 import { markdownADocxBlob } from '../js/exportDocx.js';
 import { esActa, analizarActa } from '../js/actas.js';
-import { itemsALineas, relacionAdjunta } from '../js/pdfitems.js';
+import { itemsALineas, relacionAdjunta, leerTablasMultiPagina } from '../js/pdfitems.js';
 
 /* ─────────── misma reconstrucción de líneas que extract.js (js/pdfitems.js) ─────────── */
 
@@ -61,15 +61,21 @@ function limpiar(texto) {
 
 async function textoDePdf(buffer) {
   const doc = await pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true, isEvalSupported: false }).promise;
-  const paginas = [];
-  let caracteres = 0;
+  const itemsPorPagina = [];
   for (let n = 1; n <= doc.numPages; n++) {
     const pagina = await doc.getPage(n);
-    const contenido = await pagina.getTextContent();
-    const lineas = [...itemsALineas(contenido.items), ...relacionAdjunta(contenido.items)];
-    caracteres += lineas.join('').length;
-    paginas.push(lineas.join('\n'));
+    itemsPorPagina.push((await pagina.getTextContent()).items);
   }
+  // Ver el comentario equivalente en js/extract.js: cuando encaja una tabla
+  // de varias páginas, sustituye a relacionAdjunta() para no duplicar filas.
+  const tablaMultiPagina = leerTablasMultiPagina(itemsPorPagina);
+  let caracteres = 0;
+  const paginas = itemsPorPagina.map((items) => {
+    const lineas = [...itemsALineas(items), ...(tablaMultiPagina.length ? [] : relacionAdjunta(items))];
+    caracteres += lineas.join('').length;
+    return lineas.join('\n');
+  });
+  paginas.push(tablaMultiPagina.join('\n'));
   const escaneado = caracteres < doc.numPages * 120;
   return { texto: limpiar(paginas.join('\n\n')), paginas: doc.numPages, escaneado };
 }

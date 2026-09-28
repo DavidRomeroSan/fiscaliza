@@ -9,7 +9,8 @@ import { esActa, analizarActa } from '../js/actas.js';
 import { actaMarkdown } from '../js/exportActa.js';
 import { ACTA_TEXTO } from './acta-real.js';
 import { FILAS_1690, FILAS_1683, FILAS_1689 } from './tabla-adjunta-real.js';
-import { relacionAdjunta } from '../js/pdfitems.js';
+import { FILAS_1793, FILAS_1789, FILAS_1783 } from './tablas-columnas-real.js';
+import { relacionAdjunta, leerTablaPorColumnas, desespaciar } from '../js/pdfitems.js';
 
 let fallos = 0;
 const comprobar = (cond, msg) => {
@@ -368,6 +369,54 @@ const r1689 = relacionAdjunta(FILAS_1689);
 comprobar(r1689.length === 1 && /01\/09\/2026 \| 2026 2318 226 0001 \| 14\.400,00 € \| 00000000T \| GALVEZ CORTES MARCOS \|/.test(r1689[0]) && !/Dar cuenta/.test(r1689[0]),
   `1689: el total suelto y el punto 2.- del RESUELVO no entran en la fila → ${r1689[0]}`);
 comprobar(relacionAdjunta([]).length === 0, 'sin cabecera de tabla no devuelve nada');
+
+console.log('\n━━━ leerTablaPorColumnas: tablas de varias líneas por fila, con y sin CIF ━━━');
+comprobar(desespaciar('A T H I S A') === 'ATHISA' && desespaciar('TRATAMIENTOS HIGIENE S.A') === 'TRATAMIENTOS HIGIENE S.A',
+  'desespaciar: une letras sueltas, no toca una palabra ya unida');
+comprobar(desespaciar('ATHISA ANDALUZA') === 'ATHISA ANDALUZA', 'desespaciar: no funde dos fragmentos ya legibles en uno');
+comprobar(desespaciar('1.001, 21') === '1.001,21', 'desespaciar: pega los dos decimales de un importe corto partido en dos fragmentos');
+
+// Recorte de solo una fila: la línea "Líquido" (segunda mitad del rótulo
+// "Importe / Líquido") cae por debajo de la cabecera y se cuela como una
+// fila vacía inicial — el propio formato (formatoF) la descarta después
+// porque su nombre no parece un tercero; aquí basta con no contarla.
+const filas1793 = leerTablaPorColumnas([FILAS_1793],
+  [{ nombre: 'nombre', patron: /^Nombre Ter\.?$/ }, { nombre: 'concepto', patron: /^Texto Libre$/ },
+   { nombre: 'saldo', patron: /^Saldo$/ }, { nombre: 'importe', patron: /^Importe$/ }],
+  { columna: 'importe', prueba: /\d,\d{2}$/ }, 'adelante').filter(f => f.nombre);
+comprobar(filas1793.length === 4 && filas1793[0].nombre === 'ACISA' && filas1793[0].importe === '287,23'
+  && /PERIODO: 01\/07\/2026 AL 31\/07\/2026$/.test(filas1793[0].concepto),
+  `1793 (ancla en la primera línea del bloque): ACISA con las 3 líneas de concepto unidas → ${JSON.stringify(filas1793[0])}`);
+comprobar(filas1793[1].nombre === 'ACISA' && /PERIODO: 01\/08\/2026 al 31\/08\/2026$/.test(filas1793[1].concepto),
+  'la segunda fila de ACISA (mismo nombre, otro periodo) no se confunde con la primera');
+comprobar(filas1793[2].nombre === 'ACOTA2 ARQUITECTURA Y GESTIO SLP' && filas1793[2].importe === '1.100,00',
+  `nombre en 3 líneas ("ACOTA2" / "ARQUITECTURA Y" / "GESTIO SLP") recompuesto → "${filas1793[2].nombre}"`);
+
+const filas1789 = leerTablaPorColumnas([FILAS_1789],
+  [{ nombre: 'operacion', patron: /^N[ºo]\s*Operaci[óo]n$/ }, { nombre: 'aplicacion', patron: /^Aplicaci[óo]n$/, desde: 155 },
+   { nombre: 'importe', patron: /^Importe$/, desde: 248 }, { nombre: 'cif', patron: /^Tercero$/ },
+   { nombre: 'nombre', patron: /^Nombre Ter\.?$/ }, { nombre: 'concepto', patron: /^Texto Libre$/ }],
+  { columna: 'operacion', prueba: /^\d{9,}\b/ }, 'atras');
+comprobar(filas1789.length === 1 && filas1789[0].importe === '27.939,96' && filas1789[0].cif === 'Q1819002E',
+  `1789 (ancla al PIE del bloque): importe y CIF de la única fila del recorte → ${JSON.stringify(filas1789[0])}`);
+comprobar(filas1789[0].nombre === 'TESORERIA GENERAL SEGURIDAD SOCIAL GRANADA',
+  `el nombre, apilado en 4 líneas por ENCIMA del ancla, se recompone en orden → "${filas1789[0].nombre}"`);
+comprobar(filas1789[0].aplicacion === '2026 132 16000', 'la aplicación, partida entre dos líneas y dos columnas contiguas, se recompone');
+
+// Igual aquí: "d e" / "Registro" (segunda y tercera línea de la cabecera,
+// letra a letra) quedan por debajo del corte y forman su propia fila vacía.
+const filas1783 = leerTablaPorColumnas(FILAS_1783,
+  [{ nombre: 'registro', patron: /^N[uú]mero$/ }, { nombre: 'nombre', patron: /^Tercero$/ },
+   { nombre: 'importe', patron: /^Import$/, desde: 287 }, { nombre: 'programa', patron: /^Pro$/ },
+   { nombre: 'economica', patron: /^Eco$/ }, { nombre: 'concepto', patron: /^Descripci[óo]n/ }],
+  { columna: 'importe', prueba: /\d,\d{2}$/ }, 'adelante').filter(f => f.nombre);
+comprobar(filas1783.length === 3 && filas1783[0].nombre === 'ACISA' && filas1783[0].importe === '287,23',
+  `1783: cabecera con las etiquetas letra a letra ("N ú m e r o", "P r o"...) localizada igualmente → ${filas1783.length} filas`);
+comprobar(filas1783[1].nombre === 'ATHISA ANDALUZA TRATAMIENTOS HIGIENE S.A' && filas1783[1].importe === '387,20',
+  `nombre justificado letra a letra ("A T H I S A") desespaciado sin fundirse con el siguiente fragmento → "${filas1783[1].nombre}"`);
+comprobar(filas1783[2].importe === '1.001,21',
+  `importe corto partido en dos líneas ("1.001," + "21") no confunde esa fila con la siguiente → "${filas1783[2].importe}"`);
+comprobar(filas1783[2].nombre === filas1783[1].nombre, 'la fila del importe partido conserva su propio nombre, no el de la fila vecina');
 
 console.log('\n━━━ acta de Junta de Gobierno Local (texto real, JGL/2026/31) ━━━');
 comprobar(esActa(ACTA_TEXTO), 'se reconoce como acta');
